@@ -1,0 +1,79 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-otel-collector-log-agent
+  namespace: default
+spec:
+  mode: daemonset
+  # TODO: This config can be improved a lot, but we should wait for the latest build
+  # of log-collection, after it is merged into the contrib repo.
+  config: |
+    receivers:
+      filelog:
+        include:
+          - /var/log/containers/*.log
+        start_at: end
+        exclude:
+          # Avoid parsing collectors log to prevent re-parsing parser errors.
+          - /var/log/containers/observiq-otel-collector-log-agent*
+        poll_interval: 500ms
+        resource:
+          k8s.node.name: "EXPR(env('K8S_NODE_NAME'))"
+          k8s.cluster.name: poc
+        operators:
+          # Parse the body into a json object
+          - type: json_parser
+          # Parse the filename into fields
+          - type: regex_parser
+            # NOTE: The trailing dollar sign is escaped with a second dollar sign
+            regex: '^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$$'
+            parse_from: $$attributes["file.name"]
+
+    processors:
+      batch:
+        send_batch_max_size: 200
+        send_batch_size: 200
+        timeout: 2s
+
+    exporters:
+      otlp:
+        endpoint: observiq-otel-collector-gateway:4317
+        tls:
+          insecure: true
+      
+    service:
+      pipelines:
+        logs:
+          receivers:
+            - filelog
+          processors:
+            - batch
+          exporters:
+            - otlp
+
+  image: observiq/observiq-otel-collector:v0.4.1
+  serviceAccount: default
+  resources:
+    limits:
+      memory: "250Mi"
+      cpu: 200m
+    requests:
+      memory: "50Mi"
+      cpu: 50m
+  volumes:
+    - name: varlog
+      hostPath:
+        path: /var/log
+    - name: dockerlogs
+      hostPath:
+        path: /var/lib/docker/containers
+  volumeMounts:
+    - mountPath: /var/log
+      name: varlog
+    - mountPath: /var/lib/docker/containers
+      name: dockerlogs
+  env:
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
