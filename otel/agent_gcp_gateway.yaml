@@ -136,6 +136,7 @@ spec:
             - googlecloud/logs
 
   image: observiq/observiq-otel-collector:v0.4.1
+  replicas: 2
   resources:
     limits:
       memory: "250Mi"
