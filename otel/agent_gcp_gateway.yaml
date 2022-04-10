@@ -27,6 +27,13 @@ spec:
   mode: statefulset
   config: |
     receivers:
+      prometheus/collector:
+        config:
+          scrape_configs:
+            - job_name: 'observiq-otel-collector'
+              scrape_interval: 60s
+              static_configs:
+                - targets: ['127.0.0.1:8888']
       otlp:
         protocols:
           grpc:
@@ -34,6 +41,30 @@ spec:
 
     processors:
       normalizesums:
+
+      # resource attributes will be used to map the metrics
+      # to Google Monitored Resource type 'k8s_node'
+      # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
+      resource/collector:
+        attributes:
+        - key: opencensus.resourcetype
+          value: pod
+          action: upsert
+        - key: k8s.cluster.name
+          value: poc
+          action: upsert
+        - key: k8s.cluster.location
+          value: us-east1
+          action: upsert
+        - key: k8s.namespace.name
+          value: "${K8S_NAMESPACE}"
+          action: upsert
+        - key: k8s.pod.name
+          value: "${K8S_POD_NAME}"
+          action: upsert
+        - key: k8s.node.name
+          value: "${K8S_NODE_NAME}"
+          action: upsert
 
       batch/metrics:
         send_batch_max_size: 200
@@ -128,7 +159,20 @@ spec:
         - health_check
         - file_storage
       pipelines:
-        metrics:
+        # Pipeline for collectors own metrics
+        #
+        metrics/collector:
+          receivers:
+            - prometheus/collector
+          processors:
+            - resource/collector
+            - normalizesums
+          exporters:
+            - logging
+            - googlecloud/metrics
+        # Pipeline for ingested metrics
+        #
+        metrics/ingest:
           receivers:
             - otlp
           processors:
@@ -137,6 +181,8 @@ spec:
           exporters:
             - logging
             - googlecloud/metrics
+        # Pipeline for ingested logs
+        #
         logs:
           receivers:
             - otlp
@@ -170,6 +216,18 @@ spec:
   env:
     - name: GOOGLE_APPLICATION_CREDENTIALS
       value: /otel/credentials.json
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: K8S_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: K8S_POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
