@@ -1,11 +1,11 @@
+---
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
-  name: observiq-otel-collector-cluster-metric-agent
+  name: observiq-cluster
   namespace: default
 spec:
-  mode: deployment
-
+  mode: statefulset
   config: |
     receivers:
       k8s_cluster:
@@ -98,17 +98,24 @@ spec:
           to: tag
 
       batch:
-        send_batch_max_size: 200
-        send_batch_size: 200
+        send_batch_max_size: 1000
+        send_batch_size: 1000
         timeout: 2s
   
     exporters:
       otlp:
-        endpoint: observiq-otel-collector-gateway:4317
+        endpoint: observiq-gcp-gateway:4317
         tls:
           insecure: true
 
+    extensions:
+      # Operator wil create the pvc 'default-volume-observiq-cluster-collector-0'
+      file_storage:
+        directory: /var/lib/observiq/otelcol/cluster
+
     service:
+      extensions:
+        - file_storage
       pipelines:
         metrics:
           receivers:
@@ -129,3 +136,13 @@ spec:
     requests:
       memory: "50Mi"
       cpu: 50m
+  volumes:
+    - name: gcp-credentials
+      secret:
+        secretName: gcp-credentials
+    - name: storage
+      persistentVolumeClaim:
+        claimName: default-volume-observiq-cluster-collector-0
+  volumeMounts:
+    - mountPath: /var/lib/observiq/otelcol/cluster
+      name:  storage

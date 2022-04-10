@@ -1,29 +1,30 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: observiq-otel-collector-gateway
+  name: observiq-gcp-gateway
   namespace: default
   labels:
-    app: observiq-otel-collector-gateway
+    app: observiq-gcp-gateway
 spec:
   ports:
   - port: 4317
     protocol: TCP
     targetPort: 4317
   selector:
-    app: observiq-otel-collector-gateway
+    app: observiq-gcp-gateway
   sessionAffinity: None
   type: ClusterIP
 ---
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
-  name: observiq-otel-collector-gateway
+  name: observiq-gcp-gateway
   namespace: default
   labels:
-    app: observiq-otel-collector-gateway
+    app: observiq-gcp-gateway
 spec:
-  mode: deployment
+  mode: statefulset
   config: |
     receivers:
       otlp:
@@ -37,12 +38,12 @@ spec:
       batch/metrics:
         send_batch_max_size: 200
         send_batch_size: 200
-        timeout: 10s
+        timeout: 5s
 
       batch/logs:
         send_batch_max_size: 200
         send_batch_size: 200
-        timeout: 10s
+        timeout: 5s
     
     exporters:
       logging:
@@ -115,7 +116,17 @@ spec:
         retry_on_failure:
           enabled: false
 
+    extensions:
+      health_check:
+
+      # Operator wil create the pvc 'default-volume-observiq-gcp-gateway-collector-0'
+      file_storage:
+        directory: /var/lib/observiq/otelcol/gcpgateway
+
     service:
+      extensions:
+        - health_check
+        - file_storage
       pipelines:
         metrics:
           receivers:
@@ -125,7 +136,7 @@ spec:
             - batch/metrics
           exporters:
             - logging
-            - googlecloud/metrics
+            #- googlecloud/metrics
         logs:
           receivers:
             - otlp
@@ -133,10 +144,9 @@ spec:
             - batch/logs
           exporters:
             - logging
-            - googlecloud/logs
+            #- googlecloud/logs
 
   image: observiq/observiq-otel-collector:v0.4.1
-  replicas: 2
   resources:
     limits:
       memory: "250Mi"
@@ -144,15 +154,45 @@ spec:
     requests:
       memory: "50Mi"
       cpu: 50m
-  # Mount GCP credentials
   volumes:
     - name: gcp-credentials
       secret:
         secretName: gcp-credentials
+    - name: storage
+      persistentVolumeClaim:
+        claimName: default-volume-observiq-gcp-gateway-collector-0
   volumeMounts:
     - mountPath: /otel/credentials.json
       name: gcp-credentials
       subPath: credentials.json
+    - mountPath: /var/lib/observiq/otelcol/gcpgateway
+      name: storage
   env:
     - name: GOOGLE_APPLICATION_CREDENTIALS
       value: /otel/credentials.json
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: observiq-gcp-gateway
+  namespace: default
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Statefulset
+    name: observiq-gcp-gateway-collector
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
