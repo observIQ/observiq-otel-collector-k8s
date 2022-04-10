@@ -46,9 +46,6 @@ spec:
         timeout: 5s
     
     exporters:
-      logging:
-        #logLevel: debug
-
       googlecloud/metrics:
         metric:
           prefix: custom.googleapis.com
@@ -116,6 +113,9 @@ spec:
         retry_on_failure:
           enabled: false
 
+      logging:
+        #logLevel: debug
+
     extensions:
       health_check:
 
@@ -136,7 +136,7 @@ spec:
             - batch/metrics
           exporters:
             - logging
-            #- googlecloud/metrics
+            - googlecloud/metrics
         logs:
           receivers:
             - otlp
@@ -144,7 +144,7 @@ spec:
             - batch/logs
           exporters:
             - logging
-            #- googlecloud/logs
+            - googlecloud/logs
 
   image: observiq/observiq-otel-collector:v0.4.1
   resources:
