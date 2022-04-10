@@ -4,14 +4,6 @@ Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry
 
 ## Usage
 
-**Cassandra Example App**
-
-Cassandra will be our example application for metrics.
-
-```bash
-kubectl apply -f app/cassandra/cassandra.yaml
-```
-
 **OpenTelemetry Operator**
 
 The operator requires cert manager.
@@ -56,7 +48,15 @@ kubectl apply -f otel/agent_gcp_gateway.yaml
 Deploy the cluster metrics, node metrics (node, pod, container), and log collectors.
 
 ```bash
-kubectl apply -f otel/agent_metrics_cluster.yaml
-kubectl apply -f otel/agent_metrics_node.yaml
-kubectl apply -f otel/agent_logs_container.yaml
+kubectl apply -f otel/agent_cluster.yaml
+kubectl apply -f otel/agent_node.yaml
+kubectl apply -f otel/agent_redis.yaml
+```
+
+**Redis Example App**
+
+Redis will be our example application for metrics.
+
+```bash
+kubectl apply -f app/redis/redis.yaml
 ```
