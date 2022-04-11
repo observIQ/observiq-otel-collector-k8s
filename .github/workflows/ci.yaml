@@ -65,3 +65,7 @@ jobs:
 
     - name: Wait For Redis w/ Side Car Collector
       run: kubectl rollout status deployment.apps/redis --timeout=60s
+
+    - name: Dump Failure Output
+      if: ${{ failure() }}
+      run: kubectl get pods --all-namespaces
