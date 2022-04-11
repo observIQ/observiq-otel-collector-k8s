@@ -31,7 +31,7 @@ jobs:
       uses: ./.github/actions/certmanager
 
     - name: Install OpenTelemetry Operator
-      uses: ./.github/actions/opentelmetryoperator
+      uses: ./.github/actions/opentelemetryoperator
 
     # We just need a secret that can be mounted, sending telemetry to
     # GCP is not the goal.
