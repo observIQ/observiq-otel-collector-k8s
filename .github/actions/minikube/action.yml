@@ -11,6 +11,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - id: test-plugin
-      run: "${{ github.action_path }}/test-plugin.sh use_time }} ${{ inputs.k8s_version }} ${{ inputs.k8s_runtime }}"
+    - id: minikube
+      run: "${{ github.action_path }}/minikube.sh use_time }} ${{ inputs.k8s_version }} ${{ inputs.k8s_runtime }}"
       shell: bash
