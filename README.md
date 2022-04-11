@@ -14,6 +14,8 @@ It is also assumed that you have Minikube and access to a Google Cloud environme
 Deploy cert manager, the operator, and the GCP credential secret. The credential file should be in the root of
 this repo, named `credentials.json`.
 
+The service account should have permission to write metrics, logs, and traces.
+
 ```bash
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml 
 sleep 20
@@ -21,7 +23,7 @@ kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releas
 kubectl create secret generic gcp-credentials --from-file=credentials.json -n default
 ```
 
-**deploy**
+**Deploy**
 
 Using Kustomize, deploy the minikube configuration.
 
