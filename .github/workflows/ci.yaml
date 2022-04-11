@@ -45,8 +45,11 @@ jobs:
     - name: Kustomize Output
       run: kustomize build environments/minikube
 
+    # Deploy and sleep a few seconds to avoid `kubectl rollout` failing with "not found".
     - name: Kustomize Deploy
-      run: kustomize build environments/minikube | kubectl apply -f -
+      run: |
+        kustomize build environments/minikube | kubectl apply -f -
+        sleep 3
 
     - name: Wait For GCP Gateway Collector
       run: kubectl rollout status statefulset.apps/observiq-gcp-gateway-collector --timeout=60s
