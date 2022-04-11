@@ -12,5 +12,5 @@ runs:
   using: "composite"
   steps:
     - id: minikube
-      run: "${{ github.action_path }}/minikube.sh use_time }} ${{ inputs.k8s_version }} ${{ inputs.k8s_runtime }}"
+      run: "${{ github.action_path }}/minikube.sh ${{ inputs.k8s_version }} ${{ inputs.k8s_runtime }}"
       shell: bash
