@@ -5,7 +5,7 @@ Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry
 ## Usage
 
 This repository assumes the use of [Kustomize](https://kustomize.io/) for generating Kubernetes manifests.
-It is optional, all configs in `otel/base` are useable on their own.
+It is optional, all configs in `base/` are useable on their own.
 
 It is also assumed that you have Minikube and access to a Google Cloud environment.
 
