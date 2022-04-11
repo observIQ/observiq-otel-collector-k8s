@@ -13,7 +13,7 @@ minikube_install() {
     echo "Installing Minikube version ${k8s_version}"
 
     curl -s -L -o minikube.deb https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube_1.24.0-0_amd64.deb
-    sudo apt-get install -f ./minikube.deb
+    sudo apt-get install -qq -y -f ./minikube.deb
 }
 
 minikube_start() {
