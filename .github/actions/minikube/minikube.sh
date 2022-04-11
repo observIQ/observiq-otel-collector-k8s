@@ -12,8 +12,8 @@ minikube_install() {
 
     echo "Installing Minikube version ${k8s_version}"
 
-    curl -s -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-    sudo install minikube-linux-amd64 /usr/local/bin/minikube
+    curl -s -L -o minikube.deb https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube_1.24.0-0_amd64.deb
+    sudo apt-get install -f ./minikube.deb
 }
 
 minikube_start() {
