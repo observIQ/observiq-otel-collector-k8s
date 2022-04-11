@@ -1,0 +1,8 @@
+name: "Install OpenTelemetry Operator"
+description: "Installs OpenTelemetry Operator"
+runs:
+  using: "composite"
+  steps:
+    - id: minikube
+      run: "${{ github.action_path }}/opentelemetryoperator.sh"
+      shell: bash

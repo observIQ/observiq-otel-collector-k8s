@@ -1,0 +1,8 @@
+name: "Install Cert Manager"
+description: "Installs Cert Manager"
+runs:
+  using: "composite"
+  steps:
+    - id: certmanager
+      run: "${{ github.action_path }}/certmanager.sh"
+      shell: bash
