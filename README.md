@@ -2,6 +2,8 @@
 
 Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry 
 
+> :warning: **This repository is under active development**: If using this repository, please fork or copy the configuration files directly. All examples are subject to change.
+
 ## Usage
 
 This repository assumes the use of [Kustomize](https://kustomize.io/) for generating Kubernetes manifests.
