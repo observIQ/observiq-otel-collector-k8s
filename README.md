@@ -4,58 +4,42 @@ Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry
 
 ## Usage
 
-**OpenTelemetry Operator**
+This repository assumes the use of [Kustomize](https://kustomize.io/) for generating Kubernetes manifests.
+It is optional, all configs in `otel/base` are useable on their own.
 
-The operator requires cert manager.
+It is also assumed that you have Minikube and access to a Google Cloud environment.
+
+**Prerequisites**
+
+Deploy cert manager, the operator, and the GCP credential secret. The credential file should be in the root of
+this repo, named `credentials.json`.
 
 ```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml                      
-```
-
-Wait for cert manager to deploy, and then install the operator.
-
-```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml 
+sleep 20
 kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
-```
-
-**RBAC**
-
-RBAC rules are required for some collector components.
-
-```bash
-kubectl apply -f otel/rbac.yaml
-```
-
-**Deploy Google Cloud Gateway**
-
-The Google Cloud Gateway is a collector deployment that listens for OTLP gRPC requests and
-sends them to Google Cloud. It is an aggregation layer between the cluster's various collectors.
-
-Create the credential secret
-
-```bash
 kubectl create secret generic gcp-credentials --from-file=credentials.json -n default
 ```
 
-Deploy the gateway collector
+**deploy**
+
+Using Kustomize, deploy the minikube configuration.
 
 ```bash
-kubectl apply -f otel/agent_gcp_gateway.yaml
+kustomize build environments/minikube | kubectl apply -f -
 ```
 
-**Deploy Collectors**
-
-Deploy the cluster metrics, node metrics (node, pod, container), and log collectors.
-
-```bash
-kubectl apply -f otel/agent_cluster.yaml
-kubectl apply -f otel/agent_node.yaml
-kubectl apply -f otel/agent_redis.yaml
-```
+If you do not wish to use Kustomize, you can deploy the configs in `otel/environments/minikube` directly, in the following order:
+- rbac
+- gateway agent
+- cluster agent
+- node agent
+- redis agent
 
 **Redis Example App**
 
-Redis will be our example application for metrics.
+Redis will be our example application for metrics. When deployed, the OpenTelemetry operator will
+inject a collector container into each Redis pod, to collect metrics via localhost.
 
 ```bash
 kubectl apply -f app/redis/redis.yaml
