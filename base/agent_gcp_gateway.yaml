@@ -229,7 +229,11 @@ spec:
         fieldRef:
           fieldPath: metadata.name
 ---
-apiVersion: autoscaling/v2
+# TODO: autoscaling/v2beta2 HorizontalPodAutoscaler is deprecated in v1.23+,
+# unavailable in v1.26+; use autoscaling/v2 HorizontalPodAutoscaler.
+# This change will break v1.22 and older. Upgrading to v2 is as simple as
+# switching the apiVersion, no other changes required.
+apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
   name: observiq-gcp-gateway
