@@ -1,0 +1,17 @@
+name: "Install Minikube"
+description: "Installs Minikube"
+inputs:
+  k8s_version:
+    description: 'Minikube Version'
+    required: false
+    default: "v1.23.0"
+  k8s_runtime:
+    description: 'Minkube runtime'
+    required: false
+    default: "docker"
+runs:
+  using: "composite"
+  steps:
+    - id: test-plugin
+      run: ${{ github.action_path }}/test-plugin.sh use_time }}" "${{ inputs.k8s_version }}" "${{ inputs.k8s_runtime }}"
+      shell: bash
