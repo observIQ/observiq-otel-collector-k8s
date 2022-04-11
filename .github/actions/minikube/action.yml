@@ -3,8 +3,7 @@ description: "Installs Minikube"
 inputs:
   k8s_version:
     description: 'Minikube Version'
-    required: false
-    default: "v1.23.0"
+    required: true
   k8s_runtime:
     description: 'Minkube runtime'
     required: false
