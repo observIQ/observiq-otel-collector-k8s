@@ -8,7 +8,7 @@ k8s_runtime="$2"
 
 minikube_install() {
     sudo apt-get update -qq
-    sudo apt-get install -qq -y conntrack
+    sudo apt-get install -qq -y curl apt-transport-https
 
     echo "Installing Minikube version ${k8s_version}"
 
