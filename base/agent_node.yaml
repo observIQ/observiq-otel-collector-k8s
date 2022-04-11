@@ -1,0 +1,192 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-node
+  namespace: default
+spec:
+  mode: daemonset
+  hostNetwork: true
+  config: |
+    receivers:
+      filelog:
+        include:
+          - /var/log/containers/*.log
+        start_at: end
+        exclude:
+          # Avoid parsing collectors log to prevent re-parsing parser errors.
+          - /var/log/containers/observiq-otel-collector-log-agent-collector*
+          # Avoid parsing logging exporter from gateway.
+          - /var/log/containers/observiq-otel-collector-gateway-collector*
+        poll_interval: 500ms
+        resource:
+          k8s.node.name: "EXPR(env('K8S_NODE_NAME'))"
+          k8s.cluster.name: poc
+        operators:
+          # Parse the body into a json object
+          - type: json_parser
+          # Parse the filename into fields
+          - type: regex_parser
+            # NOTE: The trailing dollar sign is escaped with a second dollar sign
+            regex: '^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$$'
+            parse_from: $$attributes["file.name"]
+
+      kubeletstats/node:
+        auth_type: serviceAccount
+        collection_interval: 60s
+        insecure_skip_verify: true
+        k8s_api_config:
+          auth_type: serviceAccount
+        metric_groups:
+        - node
+
+      kubeletstats/pod:
+        auth_type: serviceAccount
+        collection_interval: 60s
+        insecure_skip_verify: true
+        k8s_api_config:
+          auth_type: serviceAccount
+        metric_groups:
+        - pod
+
+      kubeletstats/container:
+        auth_type: serviceAccount
+        collection_interval: 60s
+        insecure_skip_verify: true
+        k8s_api_config:
+          auth_type: serviceAccount
+        metric_groups:
+        - container
+
+    processors:
+      # resource attributes will be used to map the metrics
+      # to Google Monitored Resource type 'k8s_node'
+      # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
+      #
+      # opencensus.resourcetype is not set by default, unlike the cluster metrics receiver.
+      # it is required for mapping from opencensus.resourcetype(node) to Google type "k8s_node".
+      resource/node:
+        attributes:
+          - key: opencensus.resourcetype
+            value: node
+            action: upsert
+      resource/pod:
+        attributes:
+          - key: opencensus.resourcetype
+            value: pod
+            action: upsert      
+      resource/container:
+        attributes:
+          - key: opencensus.resourcetype
+            value: container
+            action: upsert
+      resource/all:
+        attributes:
+          - key: k8s.node.name
+            value: "${K8S_NODE_NAME}"
+            action: upsert
+          - key: k8s.cluster.name
+            value: poc
+            action: upsert
+          # Must map to a GCP region or zone even if running outside of Google Cloud. This is a hard
+          # limitation of the monitored resource types.
+          - key: k8s.cluster.location
+            value: us-east1
+            action: upsert
+
+      # Preserve important resource atributes by copying them
+      # to the metrics labels, as Google exporter will strip
+      # them in favor of the monitored resource type.
+      # 
+      resourceattributetransposer/addnodename:
+        operations:
+          - from: k8s.node.name
+            to: node_name
+
+      batch:
+        send_batch_max_size: 1000
+        send_batch_size: 1000
+        timeout: 2s
+
+    exporters:
+      otlp:
+        endpoint: observiq-gcp-gateway:4317
+        tls:
+          insecure: true
+
+    extensions:
+      file_storage:
+        directory: /var/lib/observiq/otelcol/node
+
+    service:
+      extensions:
+        - file_storage
+      pipelines:
+        metrics/node:
+          receivers:
+            - kubeletstats/node
+          processors:
+            - resource/all
+            - resource/node
+            - batch
+          exporters:
+            - otlp
+        metrics/pod:
+          receivers:
+            - kubeletstats/pod
+          processors:
+            - resource/all
+            - resource/pod
+            - resourceattributetransposer/addnodename
+            - batch
+          exporters:
+            - otlp
+        metrics/container:
+          receivers:
+            - kubeletstats/container
+          processors:
+            - resource/all
+            - resource/container
+            - resourceattributetransposer/addnodename
+            - batch
+          exporters:
+            - otlp
+        logs:
+          receivers:
+            - filelog
+          processors:
+            - batch
+          exporters:
+            - otlp
+
+  image: observiq/observiq-otel-collector:v0.4.1
+  serviceAccount: observiq-otel-collector
+  resources:
+    limits:
+      memory: "250Mi"
+      cpu: 200m
+    requests:
+      memory: "50Mi"
+      cpu: 50m
+  volumes:
+    - name: varlog
+      hostPath:
+        path: /var/log
+    - name: dockerlogs
+      hostPath:
+        path: /var/lib/docker/containers
+    - name: storage
+      hostPath:
+        path: /var/lib/observiq/otelcol/node
+  volumeMounts:
+    - mountPath: /var/log
+      name: varlog
+    - mountPath: /var/lib/docker/containers
+      name: dockerlogs
+    - mountPath: /var/lib/observiq/otelcol/node
+      name: storage
+      readOnly: false
+  env:
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName

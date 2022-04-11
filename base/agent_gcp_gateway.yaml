@@ -1,0 +1,256 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: observiq-gcp-gateway
+  namespace: default
+  labels:
+    app: observiq-gcp-gateway
+spec:
+  ports:
+  - port: 4317
+    protocol: TCP
+    targetPort: 4317
+  selector:
+    app: observiq-gcp-gateway
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-gcp-gateway
+  namespace: default
+  labels:
+    app: observiq-gcp-gateway
+spec:
+  mode: statefulset
+  config: |
+    receivers:
+      prometheus/collector:
+        config:
+          scrape_configs:
+            - job_name: 'observiq-otel-collector'
+              scrape_interval: 60s
+              static_configs:
+                - targets: ['127.0.0.1:8888']
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+
+    processors:
+      normalizesums:
+
+      # resource attributes will be used to map the metrics
+      # to Google Monitored Resource type 'k8s_node'
+      # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
+      resource/collector:
+        attributes:
+        - key: opencensus.resourcetype
+          value: pod
+          action: upsert
+        - key: k8s.cluster.name
+          value: poc
+          action: upsert
+        - key: k8s.cluster.location
+          value: us-east1
+          action: upsert
+        - key: k8s.namespace.name
+          value: "${K8S_NAMESPACE}"
+          action: upsert
+        - key: k8s.pod.name
+          value: "${K8S_POD_NAME}"
+          action: upsert
+        - key: k8s.node.name
+          value: "${K8S_NODE_NAME}"
+          action: upsert
+
+      batch/metrics:
+        send_batch_max_size: 200
+        send_batch_size: 200
+        timeout: 5s
+
+      batch/logs:
+        send_batch_max_size: 200
+        send_batch_size: 200
+        timeout: 5s
+    
+    exporters:
+      googlecloud/metrics:
+        metric:
+          prefix: custom.googleapis.com
+        retry_on_failure:
+          enabled: false
+        resource_mappings:
+          # K8s cluster mapping
+          #
+          - source_type: k8s
+            target_type: k8s_cluster
+            label_mappings:
+              - source_key: k8s.cluster.name
+                target_key: cluster_name
+              - source_key: k8s.cluster.location
+                target_key: location
+          
+          # K8s node mapping
+          #
+          - source_type: node
+            target_type: k8s_node
+            label_mappings:
+              - source_key: k8s.cluster.name
+                target_key: cluster_name
+              - source_key: k8s.cluster.location
+                target_key: location
+              - source_key: k8s.node.name
+                target_key: node_name
+
+          # K8s pod mapping
+          #
+          - source_type: pod
+            target_type: k8s_pod
+            label_mappings:
+              - source_key: k8s.pod.name
+                target_key: pod_name
+              - source_key: k8s.namespace.name
+                target_key: namespace_name
+              - source_key: k8s.cluster.name
+                target_key: cluster_name
+              - source_key: k8s.cluster.location
+                target_key: location
+
+          # K8s container mapping
+          #
+          - source_type: container
+            target_type: k8s_container
+            label_mappings:
+              - source_key: k8s.cluster.name
+                target_key: cluster_name
+              - source_key: k8s.cluster.location
+                target_key: location
+              - source_key: k8s.namespace.name
+                target_key: namespace_name
+              - source_key: k8s.pod.name
+                target_key: pod_name
+              - source_key: k8s.container.name
+                target_key: container_name
+
+      googlecloud/logs:
+        # TODO: Project is not required, but there is a bug for logs where a missing
+        # project ID causes logs to fail.
+        project: otel-k8s-devel 
+        metric:
+          prefix: custom.googleapis.com
+        retry_on_failure:
+          enabled: false
+
+      logging:
+        #logLevel: debug
+
+    extensions:
+      health_check:
+
+      # Operator wil create the pvc 'default-volume-observiq-gcp-gateway-collector-0'
+      file_storage:
+        directory: /var/lib/observiq/otelcol/gcpgateway
+
+    service:
+      extensions:
+        - health_check
+        - file_storage
+      pipelines:
+        # Pipeline for collectors own metrics
+        #
+        metrics/collector:
+          receivers:
+            - prometheus/collector
+          processors:
+            - resource/collector
+            - normalizesums
+          exporters:
+            - logging
+            - googlecloud/metrics
+        # Pipeline for ingested metrics
+        #
+        metrics/ingest:
+          receivers:
+            - otlp
+          processors:
+            - normalizesums
+            - batch/metrics
+          exporters:
+            - logging
+            - googlecloud/metrics
+        # Pipeline for ingested logs
+        #
+        logs:
+          receivers:
+            - otlp
+          processors:
+            - batch/logs
+          exporters:
+            - logging
+            - googlecloud/logs
+
+  image: observiq/observiq-otel-collector:v0.4.1
+  resources:
+    limits:
+      memory: "250Mi"
+      cpu: 200m
+    requests:
+      memory: "50Mi"
+      cpu: 50m
+  volumes:
+    - name: gcp-credentials
+      secret:
+        secretName: gcp-credentials
+    - name: storage
+      persistentVolumeClaim:
+        claimName: default-volume-observiq-gcp-gateway-collector-0
+  volumeMounts:
+    - mountPath: /otel/credentials.json
+      name: gcp-credentials
+      subPath: credentials.json
+    - mountPath: /var/lib/observiq/otelcol/gcpgateway
+      name: storage
+  env:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: /otel/credentials.json
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: K8S_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: K8S_POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: observiq-gcp-gateway
+  namespace: default
+spec:
+  minReplicas: 2
+  maxReplicas: 10
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Statefulset
+    name: observiq-gcp-gateway-collector
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
