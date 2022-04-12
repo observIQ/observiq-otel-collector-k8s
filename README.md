@@ -2,7 +2,7 @@
 
 [![Test](https://github.com/observIQ/observiq-otel-collector-k8s/actions/workflows/ci.yaml/badge.svg)](https://github.com/observIQ/observiq-otel-collector-k8s/actions/workflows/ci.yaml)
 
-Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry 
+Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry collector.
 
 > :warning: **This repository is under active development**: If using this repository, please fork or copy the configuration files directly. All examples are subject to change.
 
