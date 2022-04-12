@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       app: redis
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       annotations:
@@ -23,8 +23,8 @@ spec:
         image: redis
         resources:
           limits:
-            memory: 200Mi
-            cpu: 200m
+            memory: 80Mi
+            cpu: 50m
           requests:
-            memory: 100Mi
-            cpu: 100m
+            memory: 50Mi
+            cpu: 10m

@@ -1,5 +1,7 @@
 # observiq-otel-collector-k8s
 
+[![Test](https://github.com/observIQ/observiq-otel-collector-k8s/actions/workflows/ci.yaml/badge.svg)](https://github.com/observIQ/observiq-otel-collector-k8s/actions/workflows/ci.yaml)
+
 Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry 
 
 > :warning: **This repository is under active development**: If using this repository, please fork or copy the configuration files directly. All examples are subject to change.
@@ -48,3 +50,8 @@ inject a collector container into each Redis pod, to collect metrics via localho
 ```bash
 kubectl apply -f app/redis/redis.yaml
 ```
+
+Sidecar injection is one method to collect application level metrics. Alternatively, the collector could be deployed
+as a single pod Deployment or Statefulset targeting the application's service. This would require the receiver to be
+"cluster aware". For example, Prometheus receiver with kubernetes detection (service discovery) or Elasticsearch (capable of collecting whole cluster metrics from a single endpoint).
+

@@ -1,0 +1,13 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-redis
+  namespace: default
+spec:
+  resources:
+    limits:
+      memory: 80Mi
+      cpu: 50m
+    requests:
+      memory: 50Mi
+      cpu: 10m
