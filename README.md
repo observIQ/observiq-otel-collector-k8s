@@ -50,3 +50,8 @@ inject a collector container into each Redis pod, to collect metrics via localho
 ```bash
 kubectl apply -f app/redis/redis.yaml
 ```
+
+Sidecar injection is one method to collect application level metrics. Alternatively, the collector could be deployed
+as a single pod Deployment or Statefulset targeting the application's service. This would require the receiver to be
+"cluster aware". For example, Prometheus receiver with kubernetes detection (service discovery) or Elasticsearch (capable of collecting whole cluster metrics from a single endpoint).
+
