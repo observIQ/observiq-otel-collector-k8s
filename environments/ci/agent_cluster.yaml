@@ -6,8 +6,8 @@ metadata:
 spec:
   resources:
     limits:
-      memory: "100Mi"
-      cpu: 100m
+      memory: 80Mi
+      cpu: 50m
     requests:
-      memory: "80Mi"
-      cpu: 80m
+      memory: 50Mi
+      cpu: 10m
