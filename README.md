@@ -35,7 +35,7 @@ Using Kustomize, deploy the minikube configuration.
 kustomize build environments/minikube | kubectl apply -f -
 ```
 
-If you do not wish to use Kustomize, you can deploy the configs in `otel/environments/minikube` directly, in the following order:
+If you do not wish to use Kustomize, you can deploy the configs in `otel/environments/generic` directly, in the following order:
 - rbac
 - gateway agent
 - cluster agent
