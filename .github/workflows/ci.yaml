@@ -68,4 +68,6 @@ jobs:
 
     - name: Dump Failure Output
       if: ${{ failure() }}
-      run: kubectl get pods --all-namespaces
+      run: |
+        kubectl get pods --all-namespaces
+        kubectl get events --all-namespaces
