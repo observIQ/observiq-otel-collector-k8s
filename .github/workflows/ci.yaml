@@ -43,12 +43,12 @@ jobs:
       shell: bash
 
     - name: Kustomize Output
-      run: kustomize build environments/minikube
+      run: kustomize build environments/ci
 
     # Deploy and sleep a few seconds to avoid `kubectl rollout` failing with "not found".
     - name: Kustomize Deploy
       run: |
-        kustomize build environments/minikube | kubectl apply -f -
+        kustomize build environments/ci | kubectl apply -f -
         sleep 3
 
     - name: Wait For GCP Gateway Collector
