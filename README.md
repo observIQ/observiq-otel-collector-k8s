@@ -27,10 +27,10 @@ kubectl create secret generic gcp-credentials --from-file=credentials.json -n de
 
 **Deploy**
 
-Using Kustomize, deploy the minikube configuration.
+Using Kustomize, deploy the generic configuration.
 
 ```bash
-kustomize build environments/minikube | kubectl apply -f -
+kustomize build environments/generic | kubectl apply -f -
 ```
 
 If you do not wish to use Kustomize, you can deploy the configs in `otel/environments/generic` directly, in the following order:
