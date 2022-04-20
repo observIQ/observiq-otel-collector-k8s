@@ -11,6 +11,8 @@ spec:
       k8s_cluster:
         auth_type: serviceAccount
         collection_interval: 60s
+
+      k8s_events:
     
     processors:
       # resource attributes will be used to map the metrics
@@ -123,6 +125,13 @@ spec:
           processors:
             - resource
             - resourceattributetransposer
+            - batch
+          exporters:
+            - otlp
+        logs:
+          receivers:
+            - k8s_events
+          processors:
             - batch
           exporters:
             - otlp
