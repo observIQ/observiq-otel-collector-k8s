@@ -25,6 +25,17 @@ kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releas
 kubectl create secret generic gcp-credentials --from-file=credentials.json -n default
 ```
 
+Verify that `googlecloud/logs:` in `base/agent_gcp_gateway.yaml` has the correct `project` value that points to your GCP project.
+
+```
+googlecloud/logs:
+project: <PROJECT_ID>
+metric:
+    prefix: custom.googleapis.com
+retry_on_failure:
+    enabled: false
+```
+
 **Deploy**
 
 Using Kustomize, deploy the generic configuration.
