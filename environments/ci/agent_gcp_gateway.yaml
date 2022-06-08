@@ -1,7 +1,7 @@
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
-  name: observiq-redis
+  name: observiq-gcp-gateway
   namespace: default
 spec:
   resources:
