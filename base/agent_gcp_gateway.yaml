@@ -78,10 +78,6 @@ spec:
     
     exporters:
       googlecloud/metrics:
-        metric:
-          prefix: custom.googleapis.com
-        retry_on_failure:
-          enabled: false
         resource_mappings:
           # K8s cluster mapping
           #
@@ -138,11 +134,7 @@ spec:
       googlecloud/logs:
         # TODO: Project is not required, but there is a bug for logs where a missing
         # project ID causes logs to fail.
-        project: otel-k8s-devel 
-        metric:
-          prefix: custom.googleapis.com
-        retry_on_failure:
-          enabled: false
+        project: otel-k8s-devel-352720
 
       logging:
 
