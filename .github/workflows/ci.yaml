@@ -53,7 +53,7 @@ jobs:
         sleep 3
 
     - name: Wait For GCP Gateway Collector
-      run: kubectl rollout status statefulset.apps/observiq-gcp-gateway-collector --timeout=120s
+      run: kubectl rollout status deployment.apps/observiq-gcp-gateway-collector --timeout=120s
 
     - name: Wait For Cluster Collector
       run: kubectl rollout status statefulset.apps/observiq-cluster-collector --timeout=120s
