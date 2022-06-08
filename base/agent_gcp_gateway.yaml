@@ -24,7 +24,7 @@ metadata:
   labels:
     app: observiq-gcp-gateway
 spec:
-  mode: statefulset
+  mode: deployment
   config: |
     receivers:
       prometheus/collector:
@@ -145,19 +145,13 @@ spec:
           enabled: false
 
       logging:
-        #logLevel: debug
 
     extensions:
       health_check:
 
-      # Operator wil create the pvc 'default-volume-observiq-gcp-gateway-collector-0'
-      file_storage:
-        directory: /var/lib/observiq/otelcol/gcpgateway
-
     service:
       extensions:
         - health_check
-        - file_storage
       pipelines:
         # Pipeline for collectors own metrics
         #
@@ -192,27 +186,23 @@ spec:
             - logging
             - googlecloud/logs
 
-  image: observiq/observiq-otel-collector:v0.4.1
+  image: observiq/observiq-otel-collector:1.1.0
+  # setting 'replicas' w/ 'maxReplicas' will configure an autoscaler with
+  # min 2 and max 5 replicas.
+  replicas: 2
+  maxReplicas: 5
   resources:
-    limits:
-      memory: "250Mi"
-      cpu: 200m
     requests:
-      memory: "50Mi"
-      cpu: 50m
+      memory: 100Mi
+      cpu: 100m
   volumes:
     - name: gcp-credentials
       secret:
         secretName: gcp-credentials
-    - name: storage
-      persistentVolumeClaim:
-        claimName: default-volume-observiq-gcp-gateway-collector-0
   volumeMounts:
     - mountPath: /otel/credentials.json
       name: gcp-credentials
       subPath: credentials.json
-    - mountPath: /var/lib/observiq/otelcol/gcpgateway
-      name: storage
   env:
     - name: GOOGLE_APPLICATION_CREDENTIALS
       value: /otel/credentials.json
@@ -228,33 +218,4 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.name
----
-# TODO: autoscaling/v2beta2 HorizontalPodAutoscaler is deprecated in v1.23+,
-# unavailable in v1.26+; use autoscaling/v2 HorizontalPodAutoscaler.
-# This change will break v1.22 and older. Upgrading to v2 is as simple as
-# switching the apiVersion, no other changes required.
-apiVersion: autoscaling/v2beta2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: observiq-gcp-gateway
-  namespace: default
-spec:
-  minReplicas: 2
-  maxReplicas: 10
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Statefulset
-    name: observiq-gcp-gateway-collector
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 70
+
