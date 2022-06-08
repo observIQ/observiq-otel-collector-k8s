@@ -8,3 +8,5 @@ spec:
     requests:
       memory: 50Mi
       cpu: 10m
+  replicas: 1
+  maxReplicas: 1
