@@ -28,7 +28,7 @@ spec:
           - type: regex_parser
             # NOTE: The trailing dollar sign is escaped with a second dollar sign
             regex: '^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$$'
-            parse_from: $$attributes["file.name"]
+            parse_from: attributes["log.file.name"]
 
       kubeletstats/node:
         auth_type: serviceAccount
@@ -158,15 +158,12 @@ spec:
           exporters:
             - otlp
 
-  image: observiq/observiq-otel-collector:v0.4.1
+  image: observiq/observiq-otel-collector:1.1.0
   serviceAccount: observiq-otel-collector
   resources:
-    limits:
-      memory: "250Mi"
-      cpu: 200m
     requests:
-      memory: "50Mi"
-      cpu: 50m
+      memory: 250Mi
+      cpu: 250m
   volumes:
     - name: varlog
       hostPath:
@@ -190,3 +187,5 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+  podSecurityContext:
+    runAsUser: 0

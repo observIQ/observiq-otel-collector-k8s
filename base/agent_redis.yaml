@@ -60,14 +60,11 @@ spec:
           exporters:
             - otlp
 
-  image: observiq/observiq-otel-collector:v0.4.1
+  image: observiq/observiq-otel-collector:1.1.0
   resources:
-    limits:
-      memory: "250Mi"
-      cpu: 200m
     requests:
-      memory: "125Mi"
-      cpu: 100m
+      memory: 50Mi
+      cpu: 50m
   env:
     - name: K8S_NODE_NAME
       valueFrom:

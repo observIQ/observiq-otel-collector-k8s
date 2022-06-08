@@ -136,15 +136,12 @@ spec:
           exporters:
             - otlp
 
-  image: observiq/observiq-otel-collector:v0.4.1
+  image: observiq/observiq-otel-collector:1.1.0
   serviceAccount: observiq-otel-collector
   resources:
-    limits:
-      memory: "250Mi"
-      cpu: 200m
     requests:
-      memory: "50Mi"
-      cpu: 50m
+      memory: 100Mi
+      cpu: 100m
   volumes:
     - name: gcp-credentials
       secret:
