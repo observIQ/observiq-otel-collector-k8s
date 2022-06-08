@@ -2,7 +2,7 @@
 
 Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry collector.
 
-> :warning: **This repository is under active development**: If using this repository, please fork or copy the configuration files directly. All examples are subject to change.
+> :warning: **This repository is under active development**: If using this repository, please fork or reference a tagged release. Please do not rely on main branch to be reliable.
 
 ## Usage
 
