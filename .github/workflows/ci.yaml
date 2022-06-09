@@ -9,9 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: validate manifests
-        uses: makocchi-git/actions-k8s-manifests-validate-kubeval@1.0.1
-        with:
-          files: base
-          token: ${{ secrets.GITHUB_TOKEN }}
-          comment: true
+
+      - name: Install Kustomize
+        run: curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+
+      - name: Install Kubeval
+        run: |
+          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar xf kubeval-linux-amd64.tar.gz
+          sudo cp kubeval /usr/local/bin
+
+      - name: Render
+        run: kustomize build environments/generic > generic.yaml
+
+      - name: Validate
+        run: kubeval generic.yaml --ignore-missing-schemas
+
