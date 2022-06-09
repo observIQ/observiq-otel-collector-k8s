@@ -11,13 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
-          - "v1.23.0"
-          - "v1.22.0"
           - "v1.21.0"
-          - "v1.20.0"
-        format:
-          - "docker"
-          - "containerd"
 
     steps:
     - uses: actions/checkout@v2
@@ -26,7 +20,7 @@ jobs:
       uses: ./.github/actions/minikube
       with:
         k8s_version: ${{ matrix.k8s-version }}
-        k8s_runtime: ${{ matrix.format }}
+        k8s_runtime: containerd
 
     - name: Install Cert Manager
       uses: ./.github/actions/certmanager
@@ -53,7 +47,7 @@ jobs:
         sleep 3
 
     - name: Wait For GCP Gateway Collector
-      run: kubectl rollout status statefulset.apps/observiq-gcp-gateway-collector --timeout=120s
+      run: kubectl rollout status deployment.apps/observiq-gcp-gateway-collector --timeout=120s
 
     - name: Wait For Cluster Collector
       run: kubectl rollout status statefulset.apps/observiq-cluster-collector --timeout=120s
