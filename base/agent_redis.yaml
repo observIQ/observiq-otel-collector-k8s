@@ -16,7 +16,7 @@ spec:
       resource:
         attributes:
         - key: k8s.cluster.name
-          value: poc
+          value: "${K8S_CLUSTER}"
           action: upsert
         - key: k8s.namespace.name
           value: "${K8S_NAMESPACE}"
@@ -62,3 +62,5 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.name
+    - name: K8S_CLUSTER
+      value: "cluster"

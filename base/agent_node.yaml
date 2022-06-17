@@ -20,7 +20,7 @@ spec:
         poll_interval: 500ms
         resource:
           k8s.node.name: "EXPR(env('K8S_NODE_NAME'))"
-          k8s.cluster.name: poc
+          k8s.cluster.name: "EXPR(env('K8S_CLUSTER'))"
         operators:
           # Parse the body into a json object
           - type: json_parser
@@ -105,5 +105,7 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+    - name: K8S_CLUSTER
+      value: "cluster"
   podSecurityContext:
     runAsUser: 0

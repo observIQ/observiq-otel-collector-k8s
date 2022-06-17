@@ -40,6 +40,13 @@ spec:
             endpoint: 0.0.0.0:4317
 
     processors:
+      # If running within GKE or EKS, try to detect the
+      # cloud provider, region, availability zone, and k8s.cluster.name.
+      resourcedetection:
+        detectors: [env, gke, eks]
+        timeout: 2s
+        override: false
+
       # Resource attributes will be used to map the metrics
       # to Google Monitored Resource type 'k8s_node'
       # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
@@ -57,10 +64,11 @@ spec:
 
       # Google requires k8s.cluster.name, cloud.region, cloud.availability_zone and
       # cloud.platform in order to map to container, pod, node, and cluster resource types.
+      # These values are only set if not already present.
       resource/all:
         attributes:
         - key: k8s.cluster.name
-          value: poc
+          value: "${K8S_CLUSTER}"
           action: insert
         - key: cloud.region
           value: us-east1
@@ -106,6 +114,7 @@ spec:
         #   #receivers:
         #   #  - prometheus/collector
         #   processors:
+        #     - resourcedetection
         #     - resource/collector
         #     - resource/all
         #   exporters:
@@ -117,6 +126,7 @@ spec:
           receivers:
             - otlp
           processors:
+            - resourcedetection
             - resource/all
             - batch/metrics
           exporters:
@@ -128,6 +138,8 @@ spec:
           receivers:
             - otlp
           processors:
+            - resourcedetection
+            - resource/all
             - batch/logs
           exporters:
             - logging

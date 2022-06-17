@@ -40,6 +40,13 @@ spec:
             endpoint: 0.0.0.0:4317
 
     processors:
+      # If running within GKE or EKS, try to detect the
+      # cloud provider, region, availability zone, and k8s.cluster.name.
+      resourcedetection:
+        detectors: [env, gke, eks]
+        timeout: 2s
+        override: false
+
       # Add k8s metadata to collector metrics
       resource/collector:
         attributes:
@@ -47,7 +54,7 @@ spec:
           value: pod
           action: upsert
         - key: k8s.cluster.name
-          value: poc
+          value: "${K8S_CLUSTER}"
           action: upsert
         - key: k8s.namespace.name
           value: "${K8S_NAMESPACE}"
@@ -92,6 +99,7 @@ spec:
           receivers:
             - prometheus/collector
           processors:
+            - resourcedetection
             - resource/collector
           exporters:
             - logging
@@ -102,6 +110,7 @@ spec:
           receivers:
             - otlp
           processors:
+            - resourcedetection
             - batch/metrics
           exporters:
             - logging
@@ -112,6 +121,7 @@ spec:
           receivers:
             - otlp
           processors:
+            - resourcedetection
             - batch/logs
           exporters:
             - logging
@@ -141,4 +151,5 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.name
-
+    - name: K8S_CLUSTER
+      value: "cluster"
