@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - rbac.yaml
-  - agent_gcp_gateway.yaml
   - agent_cluster.yaml
   - agent_node.yaml
   - agent_redis.yaml

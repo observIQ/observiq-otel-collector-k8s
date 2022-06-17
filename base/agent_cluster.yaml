@@ -106,7 +106,7 @@ spec:
   
     exporters:
       otlp:
-        endpoint: observiq-gcp-gateway:4317
+        endpoint: observiq-gateway:4317
         tls:
           insecure: true
 

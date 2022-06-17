@@ -11,45 +11,48 @@ It is optional, all configs in `base/` are useable on their own.
 
 It is also assumed that you have Minikube and access to a Google Cloud environment.
 
-**Prerequisites**
+### Prerequisites
+
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml 
+sleep 20
+kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+```
+
+### Deploy Collectors
+
+**Google Cloud**
 
 Deploy cert manager, the operator, and the GCP credential secret. The credential file should be in the root of
 this repo, named `credentials.json`.
 
 The service account should have permission to write metrics, logs, and traces.
 
+Deploy Google credentials:
 ```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml 
-sleep 20
-kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
-kubectl create secret generic gcp-credentials --from-file=credentials.json -n default
+kubectl create secret generic gcp-credentials \
+    --from-file=credentials.json
 ```
 
-Verify that `googlecloud/logs:` in `base/agent_gcp_gateway.yaml` has the correct `project` value that points to your GCP project.
-
-```
-googlecloud/logs:
-project: <PROJECT_ID>
-metric:
-    prefix: custom.googleapis.com
-retry_on_failure:
-    enabled: false
-```
-
-**Deploy**
-
-Using Kustomize, deploy the generic configuration.
-
+Using Kustomize, deploy the Google Cloud configuration:
 ```bash
-kustomize build environments/generic | kubectl apply -f -
+kustomize build environments/googlecloud | kubectl apply -f -
 ```
 
-If you do not wish to use Kustomize, you can deploy the configs in `otel/environments/generic` directly, in the following order:
-- rbac
-- gateway agent
-- cluster agent
-- node agent
-- redis agent
+**New Relic**
+
+Deploy New Relic API Key (insert your api key into the command):
+```bash
+kubectl create secret generic newrelic-credentials \
+    --from-literal=api-key=<api key here>
+```
+
+Using Kustomize, deploy the New Relic configuration:
+```bash
+kustomize build environments/newrelic | kubectl apply -f -
+```
+
+### Application Monitoring
 
 **Redis Example App**
 

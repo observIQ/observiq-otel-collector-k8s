@@ -20,8 +20,12 @@ jobs:
           sudo cp kubeval /usr/local/bin
 
       - name: Render
-        run: kustomize build environments/generic > generic.yaml
+        run: |
+          kustomize build environments/googlecloud > googlecloud.yaml
+          kustomize build environments/newrelic > newrelic.yaml
 
-      - name: Validate
-        run: kubeval generic.yaml --ignore-missing-schemas
+      - name: Validate GCP
+        run: kubeval googlecloud.yaml --ignore-missing-schemas
 
+      - name: Validate New Relic
+        run: kubeval newrelic.yaml --ignore-missing-schemas

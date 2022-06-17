@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: observiq-gateway
+  namespace: default
+  labels:
+    app: observiq-gateway
+spec:
+  ports:
+  - port: 4317
+    protocol: TCP
+    targetPort: 4317
+  selector:
+    app: observiq-gateway
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-gateway
+  namespace: default
+  labels:
+    app: observiq-gateway
+spec:
+  mode: deployment
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+    
+    exporters:
+      logging:
+        loglevel: debug
+
+    extensions:
+      health_check:
+
+    service:
+      extensions:
+        - health_check
+      pipelines:
+        metrics:
+          receivers:
+            - prometheus/collector
+          exporters:
+            - logging
+        logs:
+          receivers:
+            - otlp
+          exporters:
+            - logging
+
+  image: observiq/observiq-otel-collector:1.1.0
+  replicas: 1
+  maxReplicas: 1
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
