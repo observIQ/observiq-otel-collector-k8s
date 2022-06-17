@@ -47,6 +47,11 @@ kubectl create secret generic newrelic-credentials \
     --from-literal=api-key=<api key here>
 ```
 
+Using Kustomize, deploy the New Relic configuration:
+```bash
+kustomize build environments/newrelic | kubectl apply -f -
+```
+
 ### Application Monitoring
 
 **Redis Example App**
