@@ -15,90 +15,6 @@ spec:
       k8s_events:
     
     processors:
-      # resource attributes will be used to map the metrics
-      # to Google Monitored Resource type 'k8s_cluster'
-      # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
-      #
-      resource:
-        attributes:
-        # Overwrite receiver's attribute, it is probably empty
-        # because the receiver cannot detect the cluster name (clusters do not have "names").
-        - key: k8s.cluster.name
-          value: poc
-          action: upsert
-        # Must map to a GCP region or zone even if running outside of Google Cloud. This is a hard
-        # limitation of the monitored resource types.
-        - key: k8s.cluster.location
-          value: us-east1
-          action: upsert
-
-      # Preserve important resource atributes by copying them
-      # to the metrics labels, as Google exporter will strip
-      # them in favor of the monitored resource type.
-      # 
-      # Note: UID's are not being preserved, resource names should
-      # be good enough when filtering by cluter / node / etc. 
-      #
-      # Note: Some of these fields will be set using the Google exporter's
-      # resource mappings, however, we still want to set them here for
-      # metrics that do not map to the resource "k8s_container" but still
-      # require labels such as 'pod_name' in order to be unique.
-      resourceattributetransposer:
-        operations:
-        # Cluster
-        #
-        - from: k8s.cluster.name
-          to: cluster_name
-
-        # Node
-        #
-        - from: k8s.node.name
-          to: node_name
-
-        # Namespace
-        #
-        # TODO: k8s.namespace.name does not show up, but uid does. Bug?
-        - from: k8s.namespace.name
-          to: namespace_name
-        - from: k8s.namespace.uid
-          to: namespace_uid
-
-        # Daemonset
-        #
-        - from: k8s.daemonset.name
-          to: daemonset
-
-        # Deployment
-        #
-        - from: k8s.deployment.name
-          to: deployment
-
-        # Statefulset
-        #
-        - from: k8s.statefulset.name
-          to: statefulset
-
-        # Replicaset
-        #
-        - from: k8s.replicaset.name
-          to: replicaset
-
-        # Pod
-        #
-        - from: k8s.pod.name
-          to: pod_name
-        - from: pod_phase
-          to: phase
-
-        # Container
-        #
-        - from: k8s.container.name
-          to: container_name
-        - from: container.image.name
-          to: image
-        - from: container.image.tag
-          to: tag
-
       batch:
         send_batch_max_size: 1000
         send_batch_size: 1000
@@ -123,8 +39,6 @@ spec:
           receivers:
             - k8s_cluster
           processors:
-            - resource
-            - resourceattributetransposer
             - batch
           exporters:
             - otlp
@@ -136,16 +50,13 @@ spec:
           exporters:
             - otlp
 
-  image: observiq/observiq-otel-collector:1.1.0
+  image: observiq/observiq-otel-collector:1.2.0
   serviceAccount: observiq-otel-collector
   resources:
     requests:
       memory: 100Mi
       cpu: 100m
   volumes:
-    - name: gcp-credentials
-      secret:
-        secretName: gcp-credentials
     - name: storage
       persistentVolumeClaim:
         claimName: default-volume-observiq-cluster-collector-0

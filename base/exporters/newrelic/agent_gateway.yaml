@@ -49,9 +49,6 @@ spec:
         - key: k8s.cluster.name
           value: poc
           action: upsert
-        - key: k8s.cluster.location
-          value: us-east1
-          action: upsert
         - key: k8s.namespace.name
           value: "${K8S_NAMESPACE}"
           action: upsert
@@ -120,7 +117,7 @@ spec:
             - logging
             - otlp/newrelic
 
-  image: observiq/observiq-otel-collector:1.1.0
+  image: observiq/observiq-otel-collector:1.2.0
   resources:
     requests:
       memory: 100Mi

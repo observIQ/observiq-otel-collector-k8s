@@ -40,29 +40,37 @@ spec:
             endpoint: 0.0.0.0:4317
 
     processors:
-      # resource attributes will be used to map the metrics
+      # Resource attributes will be used to map the metrics
       # to Google Monitored Resource type 'k8s_node'
       # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
       resource/collector:
         attributes:
-        - key: opencensus.resourcetype
-          value: pod
-          action: upsert
-        - key: k8s.cluster.name
-          value: poc
-          action: upsert
-        - key: k8s.cluster.location
-          value: us-east1
-          action: upsert
         - key: k8s.namespace.name
           value: "${K8S_NAMESPACE}"
-          action: upsert
+          action: insert
         - key: k8s.pod.name
           value: "${K8S_POD_NAME}"
-          action: upsert
+          action: insert
         - key: k8s.node.name
           value: "${K8S_NODE_NAME}"
-          action: upsert
+          action: insert
+
+      # Google requires k8s.cluster.name, cloud.region, cloud.availability_zone and
+      # cloud.platform in order to map to container, pod, node, and cluster resource types.
+      resource/all:
+        attributes:
+        - key: k8s.cluster.name
+          value: poc
+          action: insert
+        - key: cloud.region
+          value: us-east1
+          action: insert
+        - key: cloud.availability_zone
+          value: us-east1-b
+          action: insert
+        - key: cloud.platform
+          value: gcp_kubernetes_engine
+          action: insert
 
       batch/metrics:
         send_batch_max_size: 200
@@ -75,66 +83,15 @@ spec:
         timeout: 5s
     
     exporters:
-      googlecloud/metrics:
-        resource_mappings:
-          # K8s cluster mapping
-          #
-          - source_type: k8s
-            target_type: k8s_cluster
-            label_mappings:
-              - source_key: k8s.cluster.name
-                target_key: cluster_name
-              - source_key: k8s.cluster.location
-                target_key: location
-          
-          # K8s node mapping
-          #
-          - source_type: node
-            target_type: k8s_node
-            label_mappings:
-              - source_key: k8s.cluster.name
-                target_key: cluster_name
-              - source_key: k8s.cluster.location
-                target_key: location
-              - source_key: k8s.node.name
-                target_key: node_name
-
-          # K8s pod mapping
-          #
-          - source_type: pod
-            target_type: k8s_pod
-            label_mappings:
-              - source_key: k8s.pod.name
-                target_key: pod_name
-              - source_key: k8s.namespace.name
-                target_key: namespace_name
-              - source_key: k8s.cluster.name
-                target_key: cluster_name
-              - source_key: k8s.cluster.location
-                target_key: location
-
-          # K8s container mapping
-          #
-          - source_type: container
-            target_type: k8s_container
-            label_mappings:
-              - source_key: k8s.cluster.name
-                target_key: cluster_name
-              - source_key: k8s.cluster.location
-                target_key: location
-              - source_key: k8s.namespace.name
-                target_key: namespace_name
-              - source_key: k8s.pod.name
-                target_key: pod_name
-              - source_key: k8s.container.name
-                target_key: container_name
-
-      googlecloud/logs:
-        # TODO: Project is not required, but there is a bug for logs where a missing
-        # project ID causes logs to fail.
-        project: otel-k8s-devel-352720
+      googlecloud:
+        metric:
+          resource_filters:
+            - prefix: k8s
+            - prefix: cloud
+            - prefix: container
 
       logging:
+        #loglevel: debug
 
     extensions:
       health_check:
@@ -145,24 +102,26 @@ spec:
       pipelines:
         # Pipeline for collectors own metrics
         #
-        metrics/collector:
-          receivers:
-            - prometheus/collector
-          processors:
-            - resource/collector
-          exporters:
-            - logging
-            - googlecloud/metrics
+        # metrics/collector:
+        #   receivers:
+        #     - prometheus/collector
+        #   processors:
+        #     - resource/collector
+        #     - resource/all
+        #   exporters:
+        #     - logging
+        #     - googlecloud
         # Pipeline for ingested metrics
         #
         metrics/ingest:
           receivers:
             - otlp
           processors:
+            - resource/all
             - batch/metrics
           exporters:
             - logging
-            - googlecloud/metrics
+            - googlecloud
         # Pipeline for ingested logs
         #
         logs:
@@ -171,10 +130,10 @@ spec:
           processors:
             - batch/logs
           exporters:
-            - logging
-            - googlecloud/logs
+            #- logging
+            - googlecloud
 
-  image: observiq/observiq-otel-collector:1.1.0
+  image: observiq/observiq-otel-collector:1.2.0
   resources:
     requests:
       memory: 100Mi

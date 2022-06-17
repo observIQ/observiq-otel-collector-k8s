@@ -54,7 +54,7 @@ spec:
           exporters:
             - logging
 
-  image: observiq/observiq-otel-collector:1.1.0
+  image: observiq/observiq-otel-collector:1.2.0
   replicas: 1
   maxReplicas: 1
   resources:

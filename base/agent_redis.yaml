@@ -12,19 +12,11 @@ spec:
         collection_interval: 60s
 
     processors:
-      # resource attributes will be used to map the metrics
-      # to Google Monitored Resource type 'k8s_node'
-      # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
+      # Add k8s metadata to redis metrics
       resource:
         attributes:
-        - key: opencensus.resourcetype
-          value: pod
-          action: upsert  
         - key: k8s.cluster.name
           value: poc
-          action: upsert
-        - key: k8s.cluster.location
-          value: us-east1
           action: upsert
         - key: k8s.namespace.name
           value: "${K8S_NAMESPACE}"
@@ -35,13 +27,6 @@ spec:
         - key: k8s.node.name
           value: "${K8S_NODE_NAME}"
           action: upsert
-
-      resourceattributetransposer:
-        operations:
-          # Node name is useful when troubleshooting pods / containers. We must copy it here
-          # because Google will strip it away as it is not part of the monitored resource type.
-          - from: k8s.node.name
-            to: node_name
 
     exporters:
       otlp:
@@ -56,11 +41,10 @@ spec:
             - redis
           processors:
             - resource
-            - resourceattributetransposer
           exporters:
             - otlp
 
-  image: observiq/observiq-otel-collector:1.1.0
+  image: observiq/observiq-otel-collector:1.2.0
   resources:
     requests:
       memory: 50Mi
