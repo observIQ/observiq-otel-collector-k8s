@@ -91,7 +91,6 @@ spec:
             - prefix: container
 
       logging:
-        #loglevel: debug
 
     extensions:
       health_check:
@@ -102,9 +101,10 @@ spec:
       pipelines:
         # Pipeline for collectors own metrics
         #
+        # TODO(jsirianni): Does not work with gcp, gives duplicate label key error.
         # metrics/collector:
-        #   receivers:
-        #     - prometheus/collector
+        #   #receivers:
+        #   #  - prometheus/collector
         #   processors:
         #     - resource/collector
         #     - resource/all
@@ -130,7 +130,7 @@ spec:
           processors:
             - batch/logs
           exporters:
-            #- logging
+            - logging
             - googlecloud
 
   image: observiq/observiq-otel-collector:1.2.0

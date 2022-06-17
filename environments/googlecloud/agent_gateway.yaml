@@ -6,5 +6,5 @@ metadata:
 spec:
   # setting 'replicas' w/ 'maxReplicas' will configure an autoscaler with
   # min 2 and max 5 replicas.
-  replicas: 1
-  maxReplicas: 1
+  replicas: 2
+  maxReplicas: 5
