@@ -30,7 +30,7 @@ spec:
             regex: '^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$$'
             parse_from: attributes["log.file.name"]
 
-      kubeletstats/node:
+      kubeletstats:
         auth_type: serviceAccount
         collection_interval: 60s
         insecure_skip_verify: true
@@ -38,70 +38,10 @@ spec:
           auth_type: serviceAccount
         metric_groups:
         - node
-
-      kubeletstats/pod:
-        auth_type: serviceAccount
-        collection_interval: 60s
-        insecure_skip_verify: true
-        k8s_api_config:
-          auth_type: serviceAccount
-        metric_groups:
         - pod
-
-      kubeletstats/container:
-        auth_type: serviceAccount
-        collection_interval: 60s
-        insecure_skip_verify: true
-        k8s_api_config:
-          auth_type: serviceAccount
-        metric_groups:
         - container
 
     processors:
-      # resource attributes will be used to map the metrics
-      # to Google Monitored Resource type 'k8s_node'
-      # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
-      #
-      # opencensus.resourcetype is not set by default, unlike the cluster metrics receiver.
-      # it is required for mapping from opencensus.resourcetype(node) to Google type "k8s_node".
-      resource/node:
-        attributes:
-          - key: opencensus.resourcetype
-            value: node
-            action: upsert
-      resource/pod:
-        attributes:
-          - key: opencensus.resourcetype
-            value: pod
-            action: upsert      
-      resource/container:
-        attributes:
-          - key: opencensus.resourcetype
-            value: container
-            action: upsert
-      resource/all:
-        attributes:
-          - key: k8s.node.name
-            value: "${K8S_NODE_NAME}"
-            action: upsert
-          - key: k8s.cluster.name
-            value: poc
-            action: upsert
-          # Must map to a GCP region or zone even if running outside of Google Cloud. This is a hard
-          # limitation of the monitored resource types.
-          - key: k8s.cluster.location
-            value: us-east1
-            action: upsert
-
-      # Preserve important resource atributes by copying them
-      # to the metrics labels, as Google exporter will strip
-      # them in favor of the monitored resource type.
-      # 
-      resourceattributetransposer/addnodename:
-        operations:
-          - from: k8s.node.name
-            to: node_name
-
       batch:
         send_batch_max_size: 1000
         send_batch_size: 1000
@@ -121,32 +61,10 @@ spec:
       extensions:
         - file_storage
       pipelines:
-        metrics/node:
+        metrics:
           receivers:
-            - kubeletstats/node
+            - kubeletstats
           processors:
-            - resource/all
-            - resource/node
-            - batch
-          exporters:
-            - otlp
-        metrics/pod:
-          receivers:
-            - kubeletstats/pod
-          processors:
-            - resource/all
-            - resource/pod
-            - resourceattributetransposer/addnodename
-            - batch
-          exporters:
-            - otlp
-        metrics/container:
-          receivers:
-            - kubeletstats/container
-          processors:
-            - resource/all
-            - resource/container
-            - resourceattributetransposer/addnodename
             - batch
           exporters:
             - otlp
@@ -158,7 +76,7 @@ spec:
           exporters:
             - otlp
 
-  image: observiq/observiq-otel-collector:1.1.0
+  image: observiq/observiq-otel-collector:1.2.0
   serviceAccount: observiq-otel-collector
   resources:
     requests:
