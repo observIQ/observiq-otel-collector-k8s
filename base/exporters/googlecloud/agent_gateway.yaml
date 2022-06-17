@@ -130,6 +130,9 @@ spec:
                 target_key: container_name
 
       googlecloud/logs:
+        # TODO: Project is not required, but there is a bug for logs where a missing
+        # project ID causes logs to fail.
+        project: otel-k8s-devel-352720
 
       logging:
 
