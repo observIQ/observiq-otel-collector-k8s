@@ -2,27 +2,27 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: observiq-gcp-gateway
+  name: observiq-gateway
   namespace: default
   labels:
-    app: observiq-gcp-gateway
+    app: observiq-gateway
 spec:
   ports:
   - port: 4317
     protocol: TCP
     targetPort: 4317
   selector:
-    app: observiq-gcp-gateway
+    app: observiq-gateway
   sessionAffinity: None
   type: ClusterIP
 ---
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
-  name: observiq-gcp-gateway
+  name: observiq-gateway
   namespace: default
   labels:
-    app: observiq-gcp-gateway
+    app: observiq-gateway
 spec:
   mode: deployment
   config: |
@@ -40,8 +40,6 @@ spec:
             endpoint: 0.0.0.0:4317
 
     processors:
-      normalizesums:
-
       # resource attributes will be used to map the metrics
       # to Google Monitored Resource type 'k8s_node'
       # https://cloud.google.com/logging/docs/api/v2/resource-list#resource-types
@@ -132,9 +130,6 @@ spec:
                 target_key: container_name
 
       googlecloud/logs:
-        # TODO: Project is not required, but there is a bug for logs where a missing
-        # project ID causes logs to fail.
-        project: otel-k8s-devel-352720
 
       logging:
 
@@ -152,7 +147,6 @@ spec:
             - prometheus/collector
           processors:
             - resource/collector
-            - normalizesums
           exporters:
             - logging
             - googlecloud/metrics
@@ -162,7 +156,6 @@ spec:
           receivers:
             - otlp
           processors:
-            - normalizesums
             - batch/metrics
           exporters:
             - logging
@@ -179,10 +172,6 @@ spec:
             - googlecloud/logs
 
   image: observiq/observiq-otel-collector:1.1.0
-  # setting 'replicas' w/ 'maxReplicas' will configure an autoscaler with
-  # min 2 and max 5 replicas.
-  replicas: 2
-  maxReplicas: 5
   resources:
     requests:
       memory: 100Mi
