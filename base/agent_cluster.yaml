@@ -21,6 +21,15 @@ spec:
           value: "${K8S_CLUSTER}"
           action: upsert
 
+      logstransform:
+        operators:
+          # Remove the node name resource if it is set but empty. Not doing
+          # so will cause some platforms (gcp) to identify the log entry as
+          # k8s_node resource type.
+          - type: remove
+            if: resource["k8s.node.name"] == ""
+            field: resource["k8s.node.name"]
+
       batch:
         send_batch_max_size: 1000
         send_batch_size: 1000
@@ -54,6 +63,7 @@ spec:
             - k8s_events
           processors:
             - resource
+            - logstransform
             - batch
           exporters:
             - otlp
@@ -74,3 +84,5 @@ spec:
   env:
     - name: K8S_CLUSTER
       value: "cluster"
+  podSecurityContext:
+    runAsUser: 0
