@@ -34,15 +34,14 @@ spec:
 
     processors:
       # If running within GKE or EKS, try to detect the
-      # cloud provider, region, availability zone, and k8s.cluster.name.
+      # cloud provider, region, availability zone.
       resourcedetection:
         detectors: [env, gke, eks]
         timeout: 2s
         override: false
 
-      # Google requires cloud.region, cloud.availability_zone and cloud.platform
-      # in order to map to container, pod, node, and cluster resource types.
-      # These values are only set if not already present.
+      # Google requires k8s.cluster.name, cloud.region, cloud.availability_zone and
+      # cloud.platform in order to map to container, pod, node, and cluster resource types.
       resource/all:
         attributes:
         - key: cloud.region
