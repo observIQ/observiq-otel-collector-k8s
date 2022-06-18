@@ -8,3 +8,25 @@ spec:
   # min 2 and max 5 replicas.
   replicas: 2
   maxReplicas: 5
+
+  # Begin GCP credentials
+  #
+  # A credential file is required for clusters running outside
+  # of Google Cloud or for clusters that do not have API scopes
+  # enabled for metrics, traces, and logs.
+  #
+  # Comment the following block if running
+  # with GKE w/ the correct API scopes enabled
+  # for writing metrics, traces, and logs.
+  volumes:
+    - name: gcp-credentials
+      secret:
+        secretName: gcp-credentials
+  volumeMounts:
+    - mountPath: /otel/credentials.json
+      name: gcp-credentials
+      subPath: credentials.json
+  env:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: /otel/credentials.json
+  # End GCP credentials

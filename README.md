@@ -32,14 +32,18 @@ this repo, named `credentials.json`.
 
 The service account should have permission to write metrics, logs, and traces.
 
-1. Deploy Google credentials:
+1. Authentication: 
+- If running **outside of GCP**, deploy Google credentials:
 ```bash
 kubectl create secret generic gcp-credentials \
     --from-file=credentials.json
 ```
+- If running within GCP with the correct instance scoeps enabled, comment the authentication
+  section in `environments/googlecloud/agent_gateway.yaml`.
 
 2. Update the override file in `environments/googlecloud/agent.yaml`
 - Set `K8S_CLUSTER` environment variable to the name of your cluster.
+- If running within GCP, the resource detection processor will detect the real GKE cluster name.
 
 3. Using Kustomize, deploy the Google Cloud configuration:
 ```bash
