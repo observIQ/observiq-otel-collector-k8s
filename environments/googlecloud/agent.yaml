@@ -1,0 +1,35 @@
+# Google Cloud specific overrides should go in this file for all collectors.
+#
+# Changes:
+# - K8S_CLUSTER 'cluster' --> 'google-poc'
+#
+---
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-cluster
+  namespace: default
+spec:
+  env:
+    - name: K8S_CLUSTER
+      value: "google-poc"
+---
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-node
+  namespace: default
+spec:
+  env:
+    - name: K8S_CLUSTER
+      value: "google-poc"
+---
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: observiq-redis
+  namespace: default
+spec:
+  env:
+    - name: K8S_CLUSTER
+      value: "google-poc"

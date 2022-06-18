@@ -27,13 +27,6 @@ spec:
   mode: deployment
   config: |
     receivers:
-      prometheus/collector:
-        config:
-          scrape_configs:
-            - job_name: 'observiq-otel-collector'
-              scrape_interval: 60s
-              static_configs:
-                - targets: ['127.0.0.1:8888']
       otlp:
         protocols:
           grpc:
@@ -41,30 +34,11 @@ spec:
 
     processors:
       # If running within GKE or EKS, try to detect the
-      # cloud provider, region, availability zone, and k8s.cluster.name.
+      # cloud provider, region, availability zone, and k8s.cluster.name (gke only).
       resourcedetection:
         detectors: [env, gke, eks]
         timeout: 2s
         override: false
-
-      # Add k8s metadata to collector metrics
-      resource/collector:
-        attributes:
-        - key: opencensus.resourcetype
-          value: pod
-          action: upsert
-        - key: k8s.cluster.name
-          value: "${K8S_CLUSTER}"
-          action: upsert
-        - key: k8s.namespace.name
-          value: "${K8S_NAMESPACE}"
-          action: upsert
-        - key: k8s.pod.name
-          value: "${K8S_POD_NAME}"
-          action: upsert
-        - key: k8s.node.name
-          value: "${K8S_NODE_NAME}"
-          action: upsert
 
       batch/metrics:
         send_batch_max_size: 200
@@ -93,17 +67,6 @@ spec:
       extensions:
         - health_check
       pipelines:
-        # Pipeline for collectors own metrics
-        #
-        metrics/collector:
-          receivers:
-            - prometheus/collector
-          processors:
-            - resourcedetection
-            - resource/collector
-          exporters:
-            - logging
-            - otlp/newrelic
         # Pipeline for ingested metrics
         #
         metrics/ingest:
@@ -139,17 +102,3 @@ spec:
           name: newrelic-credentials
           key: api-key
           optional: false
-    - name: K8S_NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName
-    - name: K8S_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-    - name: K8S_POD_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
-    - name: K8S_CLUSTER
-      value: "cluster"

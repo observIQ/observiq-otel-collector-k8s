@@ -15,8 +15,12 @@ It is also assumed that you have Minikube and access to a Google Cloud environme
 
 ```bash
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml 
-sleep 20
+kubectl -n cert-manager rollout status deploy/cert-manager --timeout=60s
+kubectl -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=60s
+kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=60s
+
 kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+kubectl -n opentelemetry-operator-system rollout status deploy/opentelemetry-operator-controller-manager --timeout=60s
 ```
 
 ### Deploy Collectors
@@ -28,26 +32,32 @@ this repo, named `credentials.json`.
 
 The service account should have permission to write metrics, logs, and traces.
 
-Deploy Google credentials:
+1. Deploy Google credentials:
 ```bash
 kubectl create secret generic gcp-credentials \
     --from-file=credentials.json
 ```
 
-Using Kustomize, deploy the Google Cloud configuration:
+2. Update the override file in `environments/googlecloud/agent.yaml`
+- Set `K8S_CLUSTER` environment variable to the name of your cluster.
+
+3. Using Kustomize, deploy the Google Cloud configuration:
 ```bash
 kustomize build environments/googlecloud | kubectl apply -f -
 ```
 
 **New Relic**
 
-Deploy New Relic API Key (insert your api key into the command):
+1. Deploy New Relic API Key (insert your api key into the command):
 ```bash
 kubectl create secret generic newrelic-credentials \
     --from-literal=api-key=<api key here>
 ```
 
-Using Kustomize, deploy the New Relic configuration:
+2. Update the override file in `environments/newrelic/agent.yaml`
+- Set `K8S_CLUSTER` environment variable to the name of your cluster.
+
+3. Using Kustomize, deploy the New Relic configuration:
 ```bash
 kustomize build environments/newrelic | kubectl apply -f -
 ```
