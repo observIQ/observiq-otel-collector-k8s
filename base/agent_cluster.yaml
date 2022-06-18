@@ -15,6 +15,12 @@ spec:
       k8s_events:
     
     processors:
+      resource:
+        attributes:
+        - key: k8s.cluster.name
+          value: "${K8S_CLUSTER}"
+          action: upsert
+
       batch:
         send_batch_max_size: 1000
         send_batch_size: 1000
@@ -39,6 +45,7 @@ spec:
           receivers:
             - k8s_cluster
           processors:
+            - resource
             - batch
           exporters:
             - otlp
@@ -46,6 +53,7 @@ spec:
           receivers:
             - k8s_events
           processors:
+            - resource
             - batch
           exporters:
             - otlp
@@ -63,3 +71,6 @@ spec:
   volumeMounts:
     - mountPath: /var/lib/observiq/otelcol/cluster
       name:  storage
+  env:
+    - name: K8S_CLUSTER
+      value: "cluster"

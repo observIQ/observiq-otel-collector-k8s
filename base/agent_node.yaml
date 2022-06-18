@@ -18,17 +18,32 @@ spec:
           # Avoid parsing logging exporter from gateway.
           - /var/log/containers/observiq-otel-collector-gateway-collector*
         poll_interval: 500ms
-        resource:
-          k8s.node.name: "EXPR(env('K8S_NODE_NAME'))"
-          k8s.cluster.name: poc
         operators:
-          # Parse the body into a json object
+          # The raw message looks like this:
+          # {"log":"I0618 14:30:29.641678       1 logs.go:59] http: TLS handshake error from 192.168.49.2:56222: EOF\n","stream":"stderr","time":"2022-06-18T14:30:29.641732743Z"}
+          # So we move the actual message field to body as a string instead of preserving the json string on body and duplicating the message.
+          # at attributes.log
           - type: json_parser
-          # Parse the filename into fields
+          - type: move
+            from: attributes.log
+            to: body
+
+          # Detect pod, namespace, and container names from the file name.
           - type: regex_parser
-            # NOTE: The trailing dollar sign is escaped with a second dollar sign
-            regex: '^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$$'
+            regex: '^(?P<pod>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container>.+)-'
             parse_from: attributes["log.file.name"]
+
+          # Semantic conventions for k8s
+          # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#kubernetes
+          - type: move
+            from: attributes.pod
+            to: resource["k8s.pod.name"]
+          - type: move
+            from: attributes.namespace
+            to: resource["k8s.namespace.name"]
+          - type: move
+            from: attributes.container
+            to: resource["k8s.container.name"]
 
       kubeletstats:
         auth_type: serviceAccount
@@ -42,6 +57,12 @@ spec:
         - container
 
     processors:
+      resource:
+        attributes:
+        - key: k8s.cluster.name
+          value: "${K8S_CLUSTER}"
+          action: upsert
+
       batch:
         send_batch_max_size: 1000
         send_batch_size: 1000
@@ -65,6 +86,7 @@ spec:
           receivers:
             - kubeletstats
           processors:
+            - resource
             - batch
           exporters:
             - otlp
@@ -72,6 +94,7 @@ spec:
           receivers:
             - filelog
           processors:
+            - resource
             - batch
           exporters:
             - otlp
@@ -105,5 +128,7 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+    - name: K8S_CLUSTER
+      value: "cluster"
   podSecurityContext:
     runAsUser: 0
