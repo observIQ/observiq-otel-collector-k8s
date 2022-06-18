@@ -43,6 +43,7 @@ kubectl create secret generic gcp-credentials \
 
 2. Update the override file in `environments/googlecloud/agent.yaml`
 - Set `K8S_CLUSTER` environment variable to the name of your cluster.
+- If running within GCP, the resource detection processor will detect the real GKE cluster name.
 
 3. Using Kustomize, deploy the Google Cloud configuration:
 ```bash
