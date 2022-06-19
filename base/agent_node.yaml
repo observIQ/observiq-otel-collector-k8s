@@ -5,9 +5,51 @@ metadata:
   namespace: default
 spec:
   mode: daemonset
+  # When set to 'true', $HOSTNAME will resolve to the node name (k8s.node.name)
   hostNetwork: true
   config: |
     receivers:
+      journald/kubelet:
+        directory: /var/log/journal
+        units:
+          - kubelet
+        operators:
+          # Semantic conventions says node name should be a resource.
+          - type: move
+            from: body._HOSTNAME
+            to: resource["k8s.node.name"]
+
+          # Replace journald body with application's log message
+          - type: move
+            from: body.MESSAGE
+            to: body
+
+          # Parse kubelet klog formatted message
+          - type: regex_parser
+            regex: '(?P<severity>\w)(?P<timestamp>\d{4} \d{2}:\d{2}:\d{2}.\d+)\s+(?P<pid>\d+)\s+(?P<src>[^:]*):(?P<src_line>[^\]]*)\] (?P<message>.*)'
+            severity:
+              parse_from: attributes.severity
+              mapping:
+                debug: d
+                info: i
+                warning: w
+                error: e
+                critical: c
+            timestamp:
+              parse_from: attributes.timestamp
+              layout: '%m%d %H:%M:%S.%s'
+
+          # Replace raw klog body with the message field extracted
+          # by regex parser. The severity and timestmap have been
+          # promoted to the entry and are no longer useful in the body.
+          - type: move
+            from: attributes.message
+            to: body
+
+          - type: add
+            field: attributes.log_type
+            value: kubelet
+
       filelog:
         include:
           - /var/log/containers/*.log
@@ -116,7 +158,7 @@ spec:
         - from: resource_attribute
           name: k8s.pod.uid
         filter:
-            node_from_env_var: ${K8S_NODE_NAME}
+            node_from_env_var: ${HOSTNAME}
 
       batch:
         send_batch_max_size: 1000
@@ -148,6 +190,7 @@ spec:
             - otlp
         logs:
           receivers:
+            - journald/kubelet
             - filelog
           processors:
             - resource
@@ -181,10 +224,6 @@ spec:
       name: storage
       readOnly: false
   env:
-    - name: K8S_NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName
     - name: K8S_CLUSTER
       value: "cluster"
   podSecurityContext:
