@@ -23,9 +23,13 @@ jobs:
         run: |
           kustomize build environments/googlecloud > googlecloud.yaml
           kustomize build environments/newrelic > newrelic.yaml
+          kustomize build environments/otlp > otlp.yaml
 
       - name: Validate GCP
         run: kubeval googlecloud.yaml --ignore-missing-schemas
 
       - name: Validate New Relic
         run: kubeval newrelic.yaml --ignore-missing-schemas
+
+      - name: Validate OTLP
+        run: kubeval otlp.yaml --ignore-missing-schemas
