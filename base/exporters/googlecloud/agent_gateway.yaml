@@ -81,9 +81,7 @@ spec:
       extensions:
         - health_check
       pipelines:
-        # Pipeline for ingested metrics
-        #
-        metrics/ingest:
+        metrics:
           receivers:
             - otlp
           processors:
@@ -93,8 +91,7 @@ spec:
           exporters:
             - logging
             - googlecloud
-        # Pipeline for ingested logs
-        #
+
         logs:
           receivers:
             - otlp

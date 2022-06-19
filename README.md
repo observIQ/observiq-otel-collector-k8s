@@ -1,27 +1,36 @@
 # observiq-otel-collector-k8s
 
-Configuration for instrumenting Kubernetes with the observIQ OpenTelemetry collector.
+Configuration for instrumenting Kubernetes with the [observIQ OpenTelemetry collector](https://github.com/observIQ/observiq-otel-collector).
 
 > :warning: **This repository is under active development**: If using this repository, please fork or reference a tagged release. Please do not rely on main branch to be reliable.
 
+## Support
+
+**Cluster Support**
+
+Most clusters should be supported. The following are tested:
+
+- On Prem / Minikube
+- Google Kubernetes Engine (GKE)
+- Amazon Elastic Kubernetes Service (EKS)
+- Azure Kubernetes Service (AKS)
+
+**Platform / Exporter Support**
+
+Most exporters should work. Some require additional configuration to
+work well (Google Cloud) while others support native OTLP (New Relic).
+The following are tested:
+
+- Google Cloud
+- New Relic
+- OTLP
+
 ## Usage
-
-This repository assumes the use of [Kustomize](https://kustomize.io/) for generating Kubernetes manifests.
-It is optional, all configs in `base/` are useable on their own.
-
-It is also assumed that you have Minikube and access to a Google Cloud environment.
 
 ### Prerequisites
 
-```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml 
-kubectl -n cert-manager rollout status deploy/cert-manager --timeout=60s
-kubectl -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=60s
-kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=60s
-
-kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
-kubectl -n opentelemetry-operator-system rollout status deploy/opentelemetry-operator-controller-manager --timeout=60s
-```
+- [OpenTelemetry Operator](https://github.com/open-telemetry/opentelemetry-operator) for handling collector deployment and configuration
+- [Kustomize](https://kustomize.io/) for deployment simplicity
 
 ### Deploy Collectors
 
@@ -65,6 +74,19 @@ kubectl create secret generic newrelic-credentials \
 ```bash
 kustomize build environments/newrelic | kubectl apply -f -
 ```
+
+**OTLP**
+
+The OTLP configuration exposes the entire collector configuration to the user because OTLP is going
+to be unique for each environment.
+
+1. Edit `environments/otlp/agent_gateway.yaml` and set the `endpoint` field (**near the top**) to the otlp endpoint you wish to send to. Make any additional changes required to match the OTLP destination you are sending to.
+
+2. Using Kustomize, deploy the New Relic configuration:
+```bash
+kustomize build environments/otlp | kubectl apply -f -
+```
+
 
 ### Application Monitoring
 
