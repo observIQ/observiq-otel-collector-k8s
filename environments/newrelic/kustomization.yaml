@@ -5,3 +5,4 @@ bases:
 - ../../base/exporters/newrelic
 patchesStrategicMerge:
 - agent_gateway.yaml
+- agent.yaml

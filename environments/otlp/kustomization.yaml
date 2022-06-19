@@ -5,3 +5,4 @@ bases:
 - ../../base/exporters/otlp
 patchesStrategicMerge:
 - agent_gateway.yaml
+- agent.yaml
