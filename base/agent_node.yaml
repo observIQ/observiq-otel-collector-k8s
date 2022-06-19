@@ -40,7 +40,7 @@ spec:
           # 2022-06-18T16:52:59.639114537Z stdout F {"message":"registered Stackdriver tracing","severity":"info","timestamp":"2022-06-18T16:52:59.639034532Z"}
           - id: containerd_parser
             type: regex_parser
-            regex: '^(?P<time>[^\s]+) (?P<stream>\w+) (?P<partial>\w) (?P<log>.*)'
+            regex: '^(?P<time>[^\s]+) (?P<stream>\w+) (?P<partial>\w)?(?P<log>.*)'
           - type: recombine
             source_identifier: attributes["log.file.name"]
             combine_field: attributes.log
@@ -78,6 +78,8 @@ spec:
           - type: regex_parser
             regex: '^(?P<pod>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container>.+)-'
             parse_from: attributes["log.file.name"]
+            cache:
+              size: 200
 
           # Semantic conventions for k8s
           # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#kubernetes
