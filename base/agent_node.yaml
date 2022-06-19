@@ -79,7 +79,7 @@ spec:
             regex: '^(?P<pod>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container>.+)-'
             parse_from: attributes["log.file.name"]
             cache:
-              size: 200
+              size: 500
 
           # Semantic conventions for k8s
           # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#kubernetes
