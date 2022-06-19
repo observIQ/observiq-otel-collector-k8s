@@ -1,31 +1,26 @@
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: observiq-gateway
-  namespace: default
-  labels:
-    app: observiq-gateway
-spec:
-  ports:
-  - port: 4317
-    protocol: TCP
-    targetPort: 4317
-  selector:
-    app: observiq-gateway
-  sessionAffinity: None
-  type: ClusterIP
----
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
   name: observiq-gateway
   namespace: default
-  labels:
-    app: observiq-gateway
 spec:
-  mode: deployment
+  # setting 'replicas' w/ 'maxReplicas' will configure an autoscaler with
+  # min 2 and max 5 replicas.
+  replicas: 2
+  maxReplicas: 5
+  
+  # Because everyone has a different OTLP configuration, it is intended
+  # that the otlp exporter be modified by the user here. The default
+  # configuration has TLS disabled and requires the 'endpoint' to be set.
   config: |
+    exporters:
+      otlp:
+          endpoint: http://bob.com:4433
+          tls:
+              insecure: true
+
+      logging:
+
     receivers:
       otlp:
         protocols:
@@ -49,16 +44,6 @@ spec:
         send_batch_max_size: 200
         send_batch_size: 200
         timeout: 5s
-    
-    exporters:
-      otlp/newrelic:
-          endpoint: https://otlp.nr-data.net:443
-          headers:
-              - api-key: $NEWRELIC_API_KEY
-          tls:
-              insecure: false
-
-      logging:
 
     extensions:
       health_check:
@@ -75,7 +60,8 @@ spec:
             - batch/metrics
           exporters:
             - logging
-            - otlp/newrelic
+            - otlp
+
         logs:
           receivers:
             - otlp
@@ -84,17 +70,4 @@ spec:
             - batch/logs
           exporters:
             - logging
-            - otlp/newrelic
-
-  image: observiq/observiq-otel-collector:1.2.0
-  resources:
-    requests:
-      memory: 100Mi
-      cpu: 100m
-  env:
-    - name: NEWRELIC_API_KEY
-      valueFrom:
-        secretKeyRef:
-          name: newrelic-credentials
-          key: api-key
-          optional: false
+            - otlp

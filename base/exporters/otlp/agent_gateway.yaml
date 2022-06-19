@@ -25,39 +25,7 @@ metadata:
     app: observiq-gateway
 spec:
   mode: deployment
-  config: |
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:4317
-    
-    exporters:
-      logging:
-        loglevel: debug
-
-    extensions:
-      health_check:
-
-    service:
-      extensions:
-        - health_check
-      pipelines:
-        metrics:
-          receivers:
-            - otlp
-          exporters:
-            - logging
-
-        logs:
-          receivers:
-            - otlp
-          exporters:
-            - logging
-
   image: observiq/observiq-otel-collector:1.2.0
-  replicas: 1
-  maxReplicas: 1
   resources:
     requests:
       memory: 100Mi
