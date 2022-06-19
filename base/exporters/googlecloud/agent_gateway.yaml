@@ -33,10 +33,10 @@ spec:
             endpoint: 0.0.0.0:4317
 
     processors:
-      # If running within GKE or EKS, try to detect the
+      # If running within GKE, try to detect the
       # cloud provider, region, availability zone, cluster name.
       resourcedetection:
-        detectors: [gke, eks]
+        detectors: [gke]
         timeout: 2s
         override: true
 
