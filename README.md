@@ -1,8 +1,8 @@
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 # observiq-otel-collector-k8s
 
 Configuration for instrumenting Kubernetes with the [observIQ OpenTelemetry collector](https://github.com/observIQ/observiq-otel-collector).
-
-> :warning: **This repository is under active development**: If using this repository, please fork or reference a tagged release. Please do not rely on main branch to be reliable.
 
 ## Support
 
@@ -25,7 +25,29 @@ The following are tested:
 - New Relic
 - OTLP
 
+**Telemetry Types**
+
+Metrics, logs and traces are supported.
+
+**Metrics**
+
+- K8s Metrics: Cluster, node, pod, and container metrics are collected.
+- App Metrics: Application specific metrics can be collected as well, see `app/redis` for an example.
+- Custom Metrics: If you have applications emitting metrics using an Open Telemetry SDK, they can be sent to the gateway collector at `observiq-gateway:4317` (OTLP GRPC receiver).
+
+**Logs**
+
+Container logs are collected using the node agent.
+
+If you have applications emitting logs using an Open Telemetry SDK, they can be sent to the gateway collector at `observiq-gateway:4317` (OTLP GRPC receiver).
+
+**Traces**
+
+If you have applications emitting traces using an Open Telemetry SDK, they can be sent to the gateway collector at `observiq-gateway:4317` (OTLP GRPC receiver).
+
 ## Usage
+
+> :warning: Please reference a tagged release, Do not rely on main branch to be reliable. If implementing this in a production environment, it is strongly recommended that you copy this code to your own deployment repository.
 
 ### Prerequisites
 
@@ -87,6 +109,7 @@ to be unique for each environment.
 kustomize build environments/otlp | kubectl apply -f -
 ```
 
+agratae
 
 ### Application Monitoring
 
