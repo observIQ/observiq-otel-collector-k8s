@@ -39,10 +39,10 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install Misspell
-        run: curl -L https://git.io/misspell | sudo bash
+        run: curl -L https://git.io/misspell | bash
 
       - name: Check Spelling
-        run: misspell -error README.md
+        run: ./bin/misspell -error README.md
 
   yamllint:
     runs-on: ubuntu-latest
