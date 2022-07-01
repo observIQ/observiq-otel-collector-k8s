@@ -8,9 +8,9 @@ metadata:
     app: observiq-gateway
 spec:
   ports:
-  - port: 4317
-    protocol: TCP
-    targetPort: 4317
+    - port: 4317
+      protocol: TCP
+      targetPort: 4317
   selector:
     app: observiq-gateway
   sessionAffinity: None
@@ -49,7 +49,7 @@ spec:
         send_batch_max_size: 200
         send_batch_size: 200
         timeout: 5s
-    
+
     exporters:
       otlp/newrelic:
           endpoint: https://otlp.nr-data.net:443

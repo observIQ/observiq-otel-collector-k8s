@@ -1,3 +1,4 @@
+# yamllint disable rule:line-length
 ---
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
@@ -13,7 +14,7 @@ spec:
         collection_interval: 60s
 
       k8s_events:
-    
+
     processors:
       resource:
         attributes:
@@ -34,7 +35,7 @@ spec:
         send_batch_max_size: 1000
         send_batch_size: 1000
         timeout: 2s
-  
+
     exporters:
       otlp:
         endpoint: observiq-gateway:4317
@@ -80,7 +81,7 @@ spec:
         claimName: default-volume-observiq-cluster-collector-0
   volumeMounts:
     - mountPath: /var/lib/observiq/otelcol/cluster
-      name:  storage
+      name: storage
   env:
     - name: K8S_CLUSTER
       value: "cluster"

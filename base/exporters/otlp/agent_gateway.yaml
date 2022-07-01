@@ -8,9 +8,9 @@ metadata:
     app: observiq-gateway
 spec:
   ports:
-  - port: 4317
-    protocol: TCP
-    targetPort: 4317
+    - port: 4317
+      protocol: TCP
+      targetPort: 4317
   selector:
     app: observiq-gateway
   sessionAffinity: None

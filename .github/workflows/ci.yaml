@@ -1,3 +1,5 @@
+# yamllint disable rule:line-length
+---
 name: Test
 on:
   pull_request:
@@ -30,3 +32,30 @@ jobs:
 
       - name: Validate Manifest
         run: kubeval ${{ matrix.environment }}.yaml --ignore-missing-schemas
+
+  misspell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Misspell
+        run: curl -L https://git.io/misspell | sudo bash
+
+      - name: Check Spelling
+        run: misspell -error README.md
+
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out code
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Yamllint
+        run: pip install -U yamllint~=1.26.1
+
+      - name: run yamllint
+        run: yamllint .

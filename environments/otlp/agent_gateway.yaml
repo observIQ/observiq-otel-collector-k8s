@@ -1,3 +1,4 @@
+---
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
@@ -8,7 +9,7 @@ spec:
   # min 2 and max 5 replicas.
   replicas: 2
   maxReplicas: 5
-  
+
   # Because everyone has a different OTLP configuration, it is intended
   # that the otlp exporter be modified by the user here. The default
   # configuration has TLS disabled and requires the 'endpoint' to be set.

@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,12 +20,12 @@ spec:
       name: redis
     spec:
       containers:
-      - name: redis
-        image: redis
-        resources:
-          limits:
-            memory: 80Mi
-            cpu: 50m
-          requests:
-            memory: 50Mi
-            cpu: 10m
+        - name: redis
+          image: redis
+          resources:
+            limits:
+              memory: 80Mi
+              cpu: 50m
+            requests:
+              memory: 50Mi
+              cpu: 10m
