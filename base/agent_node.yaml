@@ -7,8 +7,6 @@ metadata:
   namespace: default
 spec:
   mode: daemonset
-  # When set to 'true', $HOSTNAME will resolve to the node name (k8s.node.name)
-  hostNetwork: true
   config: |
     receivers:
       journald/kubelet:
@@ -57,10 +55,8 @@ spec:
           - /var/log/containers/*.log
         start_at: end
         exclude:
-          # Avoid parsing collectors log to prevent re-parsing parser errors.
-          - /var/log/containers/observiq-otel-collector-log-agent-collector*
-          # Avoid parsing logging exporter from gateway.
-          - /var/log/containers/observiq-otel-collector-gateway-collector*
+          # Avoid parsing collector logs
+          - /var/log/containers/observiq-*-collector-*
         poll_interval: 500ms
         operators:
           # Support docker and containerd runtimes, which have different
@@ -149,18 +145,22 @@ spec:
         - container
 
     processors:
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        pod_association:
+        - from: resource_attribute
+          name: k8s.pod.uid
+        - from: resource_attribute
+          name: k8s.pod.name
+        filter:
+            node_from_env_var: KUBE_NODE_NAME
+
       resource:
         attributes:
         - key: k8s.cluster.name
           value: "${K8S_CLUSTER}"
           action: upsert
-
-      k8sattributes:
-        pod_association:
-        - from: resource_attribute
-          name: k8s.pod.uid
-        filter:
-            node_from_env_var: ${HOSTNAME}
 
       batch:
         send_batch_max_size: 1000
@@ -185,8 +185,8 @@ spec:
           receivers:
             - kubeletstats
           processors:
-            - resource
             - k8sattributes
+            - resource
             - batch
           exporters:
             - otlp
@@ -195,8 +195,8 @@ spec:
             - journald/kubelet
             - filelog
           processors:
-            - resource
             - k8sattributes
+            - resource
             - batch
           exporters:
             - otlp
@@ -228,5 +228,10 @@ spec:
   env:
     - name: K8S_CLUSTER
       value: "cluster"
+    - name: KUBE_NODE_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: spec.nodeName
   podSecurityContext:
     runAsUser: 0
