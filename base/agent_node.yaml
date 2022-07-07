@@ -154,7 +154,7 @@ spec:
         - from: resource_attribute
           name: k8s.pod.name
         filter:
-            node_from_env_var: KUBE_NODE_NAME
+            node_from_env_var: ${KUBE_NODE_NAME}
 
       resource:
         attributes:
