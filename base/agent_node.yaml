@@ -9,129 +9,16 @@ spec:
   mode: daemonset
   config: |
     receivers:
-      journald/kubelet:
-        directory: /var/log/journal
-        units:
-          - kubelet
-        operators:
-          # Semantic conventions says node name should be a resource.
-          - type: move
-            from: body._HOSTNAME
-            to: resource["k8s.node.name"]
+      plugin/kubelet:
+        path: /etc/otel/plugins/kubelet_logs.yaml
+        parameters:
+          start_at: beginning
+          journald_directory: /var/log/journal
 
-          # Replace journald body with application's log message
-          - type: move
-            from: body.MESSAGE
-            to: body
-
-          # Parse kubelet klog formatted message
-          - type: regex_parser
-            regex: '(?P<severity>\w)(?P<timestamp>\d{4} \d{2}:\d{2}:\d{2}.\d+)\s+(?P<pid>\d+)\s+(?P<src>[^:]*):(?P<src_line>[^\]]*)\] (?P<message>.*)'
-            severity:
-              parse_from: attributes.severity
-              mapping:
-                debug: d
-                info: i
-                warning: w
-                error: e
-                critical: c
-            timestamp:
-              parse_from: attributes.timestamp
-              layout: '%m%d %H:%M:%S.%s'
-
-          # Replace raw klog body with the message field extracted
-          # by regex parser. The severity and timestmap have been
-          # promoted to the entry and are no longer useful in the body.
-          - type: move
-            from: attributes.message
-            to: body
-
-          - type: add
-            field: attributes.log_type
-            value: kubelet
-
-      filelog:
-        include:
-          - /var/log/containers/*.log
-        start_at: end
-        exclude:
-          # Avoid parsing collector logs
-          - /var/log/containers/observiq-*-collector-*
-        poll_interval: 500ms
-        operators:
-          # Support docker and containerd runtimes, which have different
-          # logging formats.
-          - type: router
-            routes:
-              - expr: 'body matches "^[^\\s]+ \\w+ .*"'
-                output: containerd_parser
-            default: docker_parser
-
-          # The raw message looks like this:
-          # {"log":"I0618 14:30:29.641678       1 logs.go:59] http: TLS handshake error from 192.168.49.2:56222: EOF\n","stream":"stderr","time":"2022-06-18T14:30:29.641732743Z"}
-          - type: json_parser
-            id: docker_parser
-            timestamp:
-              parse_from: attributes.time
-              layout: '%Y-%m-%dT%H:%M:%S.%sZ'
-            output: log-to-body
-
-          # The raw message looks like this:
-          # 2022-06-18T16:52:59.639114537Z stdout F {"message":"registered Stackdriver tracing","severity":"info","timestamp":"2022-06-18T16:52:59.639034532Z"}
-          - id: containerd_parser
-            type: regex_parser
-            regex: '^(?P<time>[^\s]+) (?P<stream>\w+) (?P<partial>\w)?(?P<log>.*)'
-          - type: recombine
-            source_identifier: attributes["log.file.name"]
-            combine_field: attributes.log
-            is_last_entry: "attributes.partial == 'F'"
-          - type: remove
-            field: attributes.partial
-          - id: time_parser_router
-            type: router
-            routes:
-              # Containerd can have a couple timestamp formats depending if the node has local time set
-              - output: local_containerd_timestamp_parser
-                expr: 'attributes.time != nil and attributes.time matches "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}[\\+-]\\d{2}:\\d{2}"'
-              - output: utc_containerd_timestamp_parser
-                expr: 'attributes.time != nil and attributes.time matches "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3,9}Z"'
-          - type: time_parser
-            id: local_containerd_timestamp_parser
-            parse_from: attributes.time
-            layout: '%Y-%m-%dT%H:%M:%S.%s%j'
-            output: log-to-body
-          - type: time_parser
-            id: utc_containerd_timestamp_parser
-            parse_from: attributes.time
-            layout: '%Y-%m-%dT%H:%M:%S.%sZ'
-            output: log-to-body
-
-          # The raw body does not contain anything useful considering timestamp has been promotoed to
-          # the log entries timestamp, therefore we move attributes.log (the actual container log message)
-          # to body.
-          - type: move
-            id: log-to-body
-            from: attributes.log
-            to: body
-
-          # Detect pod, namespace, and container names from the file name.
-          - type: regex_parser
-            regex: '^(?P<pod>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container>.+)-'
-            parse_from: attributes["log.file.name"]
-            cache:
-              size: 500
-
-          # Semantic conventions for k8s
-          # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#kubernetes
-          - type: move
-            from: attributes.pod
-            to: resource["k8s.pod.name"]
-          - type: move
-            from: attributes.namespace
-            to: resource["k8s.namespace.name"]
-          - type: move
-            from: attributes.container
-            to: resource["k8s.container.name"]
+      plugin/container:
+        path: /etc/otel/plugins/container_logs.yaml
+        parameters:
+          start_at: beginning
 
       kubeletstats:
         auth_type: serviceAccount
@@ -192,8 +79,8 @@ spec:
             - otlp
         logs:
           receivers:
-            - journald/kubelet
-            - filelog
+            - plugin/kubelet
+            - plugin/container
           processors:
             - k8sattributes
             - resource
@@ -201,7 +88,7 @@ spec:
           exporters:
             - otlp
 
-  image: observiq/observiq-otel-collector:1.3.0
+  image: observiq/observiq-otel-collector:1.5.0
   serviceAccount: observiq-otel-collector
   resources:
     requests:
