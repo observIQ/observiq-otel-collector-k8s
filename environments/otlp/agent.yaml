@@ -23,6 +23,11 @@ spec:
   env:
     - name: K8S_CLUSTER
       value: "otlp-poc"
+    - name: KUBE_NODE_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: spec.nodeName
 ---
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
@@ -33,3 +38,15 @@ spec:
   env:
     - name: K8S_CLUSTER
       value: "otlp-poc"
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: K8S_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: K8S_POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name

@@ -86,7 +86,7 @@ spec:
             - logging
             - otlp/newrelic
 
-  image: observiq/observiq-otel-collector:1.3.0
+  image: observiq/observiq-otel-collector:1.4.0
   resources:
     requests:
       memory: 100Mi
