@@ -55,6 +55,47 @@ spec:
           value: gcp_kubernetes_engine
           action: insert
 
+      # Logs: Preserve resource labels that are discarded after mapping to
+      # google monitored resource type. The following are preserved by
+      # google exporter log pipelines:
+      #     -> k8s.cluster.name: STRING(google-poc)
+      #     -> k8s.container.name: STRING(otc-container)
+      #     -> k8s.namespace.name: STRING(default)
+      #     -> k8s.pod.name: STRING(observiq-node-collector-46r2h)
+      # The following should be moved to labels
+      #     -> k8s.deployment.name: STRING(observiq-node)
+      #     -> k8s.node.name: STRING(minikube)
+      #     -> k8s.pod.start_time: STRING(2022-07-18 19:02:31 +0000 UTC)
+      #     -> k8s.pod.uid: STRING(82aa9f33-f049-4d6f-b329-a8bf3ef4d819)
+      #     -> container.image.name: STRING(bmedora/observiq-otel-collector-amd64)
+      #     -> container.image.tag: STRING(k8s-dev.0)
+      logstransform/k8spodlabels:
+        operators:
+          - type: move
+            if: resource["k8s.deployment.name"] != nil
+            from: resource["k8s.deployment.name"]
+            to: attributes["k8s.deployment.name"]
+          - type: move
+            if: resource["k8s.node.name"] != nil
+            from: resource["k8s.node.name"]
+            to: attributes["k8s.node.name"]
+          - type: move
+            if: resource["k8s.pod.start_time"] != nil
+            from: resource["k8s.pod.start_time"]
+            to: attributes["k8s.pod.start_time"]
+          - type: move
+            if: resource["k8s.pod.uid"] != nil
+            from: resource["k8s.pod.uid"]
+            to: attributes["k8s.pod.uid"]
+          - type: move
+            if: resource["container.image.name"] != nil
+            from: resource["container.image.name"]
+            to: attributes["container.image.name"]
+          - type: move
+            if: resource["container.image.tag"] != nil
+            from: resource["container.image.tag"]
+            to: attributes["container.image.tag"]
+
       batch/metrics:
         send_batch_max_size: 200
         send_batch_size: 200
@@ -99,12 +140,13 @@ spec:
           processors:
             - resourcedetection
             - resource/all
+            - logstransform/k8spodlabels
             - batch/logs
           exporters:
             - logging
             - googlecloud
 
-  image: observiq/observiq-otel-collector:1.3.0
+  image: observiq/observiq-otel-collector:1.4.0
   resources:
     requests:
       memory: 100Mi
